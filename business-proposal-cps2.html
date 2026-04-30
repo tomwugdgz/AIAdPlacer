@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI+社区媒体 CPS 2.0 商业方案</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", sans-serif; background: #0a0e27; color: #e0e0e0; line-height: 1.6; }
+        
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a237e 50%, #0d47a1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(100,181,246,0.1) 0%, transparent 60%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .hero-content { position: relative; z-index: 1; max-width: 900px; }
+        .hero h1 { font-size: 48px; font-weight: 700; color: #fff; margin-bottom: 24px; line-height: 1.2; }
+        .hero h1 span { background: linear-gradient(90deg, #64b5f6, #ce93d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero .subtitle { font-size: 20px; color: rgba(255,255,255,0.8); margin-bottom: 40px; }
+        .hero .tagline { display: inline-block; background: rgba(255,255,255,0.1); padding: 12px 24px; border-radius: 30px; font-size: 14px; color: #90caf9; border: 1px solid rgba(100,181,246,0.3); }
+
+        .section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 40px;
+        }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header .label { display: inline-block; background: rgba(100,181,246,0.15); padding: 6px 16px; border-radius: 20px; font-size: 13px; color: #64b5f6; margin-bottom: 16px; border: 1px solid rgba(100,181,246,0.3); }
+        .section-header h2 { font-size: 36px; color: #fff; margin-bottom: 16px; }
+        .section-header p { font-size: 16px; color: #aaa; max-width: 700px; margin: 0 auto; }
+
+        /* 行业数据卡片 */
+        .data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 60px; }
+        .data-card {
+            background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%);
+            border: 1px solid #2d3172;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .data-card:hover { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+        .data-card .number { font-size: 48px; font-weight: 700; background: linear-gradient(90deg, #64b5f6, #4caf50); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .data-card .label { font-size: 14px; color: #90caf9; margin-bottom: 8px; }
+        .data-card .desc { font-size: 12px; color: #666; }
+
+        /* 痛点分析 */
+        .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 60px; }
+        .pain-card {
+            background: linear-gradient(145deg, #1a1025 0%, #2a1540 100%);
+            border: 1px solid #4a2060;
+            border-radius: 16px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .pain-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: linear-gradient(90deg, #ff5252, #ff9800);
+        }
+        .pain-card .icon { font-size: 40px; margin-bottom: 16px; }
+        .pain-card h3 { font-size: 20px; color: #fff; margin-bottom: 12px; }
+        .pain-card .symptoms { list-style: none; margin-bottom: 16px; }
+        .pain-card .symptoms li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; color: #aaa; }
+        .pain-card .symptoms li:last-child { border-bottom: none; }
+        .pain-card .impact { background: rgba(255,82,82,0.1); padding: 12px; border-radius: 8px; font-size: 13px; color: #ff8a80; }
+
+        /* 五力模型 */
+        .five-force {
+            background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%);
+            border: 1px solid #2d3172;
+            border-radius: 20px;
+            padding: 48px;
+            margin-bottom: 60px;
+        }
+        .force-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .force-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 24px;
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+        .force-card:hover { background: rgba(255,255,255,0.05); transform: translateX(4px); }
+        .force-card:nth-child(1) { border-color: #4caf50; }
+        .force-card:nth-child(2) { border-color: #2196f3; }
+        .force-card:nth-child(3) { border-color: #9c27b0; }
+        .force-card:nth-child(4) { border-color: #ff9800; }
+        .force-card .force-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .force-card .force-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .force-card:nth-child(1) .force-icon { background: rgba(76,175,80,0.2); }
+        .force-card:nth-child(2) .force-icon { background: rgba(33,150,243,0.2); }
+        .force-card:nth-child(3) .force-icon { background: rgba(156,39,176,0.2); }
+        .force-card:nth-child(4) .force-icon { background: rgba(255,152,0,0.2); }
+        .force-card h3 { font-size: 18px; color: #fff; }
+        .force-card .agent-tag { background: rgba(100,181,246,0.15); padding: 4px 12px; border-radius: 12px; font-size: 12px; color: #64b5f6; margin-left: auto; }
+        .force-card .features { list-style: none; }
+        .force-card .features li { padding: 6px 0; font-size: 13px; color: #aaa; display: flex; align-items: flex-start; gap: 8px; }
+        .force-card .features li::before { content: '✓'; color: #4caf50; font-weight: 700; }
+        .force-card .kpi { margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; display: flex; gap: 16px; }
+        .force-card .kpi-item { flex: 1; text-align: center; }
+        .force-card .kpi-value { font-size: 20px; font-weight: 700; color: #fff; }
+        .force-card .kpi-label { font-size: 11px; color: #666; }
+
+        /* 案例实证 */
+        .case-card {
+            background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%);
+            border: 1px solid #2d3172;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }
+        .case-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .case-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+        .case-logo { width: 60px; height: 60px; background: rgba(100,181,246,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .case-info h3 { font-size: 20px; color: #fff; }
+        .case-info .industry { font-size: 13px; color: #64b5f6; }
+        .case-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .case-metric { text-align: center; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .case-metric .value { font-size: 24px; font-weight: 700; color: #4caf50; }
+        .case-metric .label { font-size: 12px; color: #888; margin-top: 4px; }
+        .case-data-chain { font-size: 13px; color: #aaa; line-height: 1.8; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .case-data-chain strong { color: #64b5f6; }
+
+        /* 分成模型 */
+        .commission-model {
+            background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%);
+            border: 1px solid #2d3172;
+            border-radius: 20px;
+            padding: 48px;
+            margin-bottom: 60px;
+        }
+        .model-comparison { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; margin-bottom: 32px; }
+        .model-card { padding: 32px; border-radius: 12px; border: 2px solid; }
+        .model-card.old { border-color: #ff5252; background: rgba(255,82,82,0.05); }
+        .model-card.new { border-color: #4caf50; background: rgba(76,175,80,0.05); }
+        .model-card h3 { font-size: 20px; margin-bottom: 16px; }
+        .model-card.old h3 { color: #ff8a80; }
+        .model-card.new h3 { color: #81c784; }
+        .model-card .features { list-style: none; }
+        .model-card .features li { padding: 8px 0; font-size: 14px; color: #aaa; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .model-card .features li:last-child { border-bottom: none; }
+        .model-card .features li::before { content: '→'; margin-right: 8px; }
+        .model-card.old .features li::before { color: #ff5252; }
+        .model-card.new .features li::before { color: #4caf50; }
+
+        .commission-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .commission-table th { background: rgba(100,181,246,0.1); padding: 12px 16px; text-align: left; color: #90caf9; font-weight: 600; }
+        .commission-table td { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .commission-table tr:hover { background: rgba(100,181,246,0.05); }
+        .commission-table .highlight { color: #4caf50; font-weight: 600; }
+
+        /* 未来展望 */
+        .future-roadmap {
+            background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%);
+            border: 1px solid #2d3172;
+            border-radius: 20px;
+            padding: 48px;
+            margin-bottom: 60px;
+        }
+        .timeline { position: relative; padding-left: 40px; }
+        .timeline::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, #64b5f6, #9c27b0, #ff9800); }
+        .timeline-item { position: relative; margin-bottom: 40px; }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #64b5f6;
+            border: 3px solid #0a0e27;
+        }
+        .timeline-item:nth-child(2)::before { background: #9c27b0; }
+        .timeline-item:nth-child(3)::before { background: #ff9800; }
+        .timeline-item h3 { font-size: 20px; color: #fff; margin-bottom: 8px; }
+        .timeline-item .time-label { font-size: 13px; color: #64b5f6; margin-bottom: 12px; }
+        .timeline-item .content { font-size: 14px; color: #aaa; line-height: 1.8; }
+        .timeline-item .content ul { list-style: none; margin-top: 8px; }
+        .timeline-item .content ul li { padding: 4px 0; }
+        .timeline-item .content ul li::before { content: '◆'; color: #64b5f6; margin-right: 8px; font-size: 10px; }
+
+        .footer { text-align: center; padding: 60px 40px; background: #050814; }
+        .footer p { color: #666; font-size: 14px; }
+        .footer .contact { margin-top: 24px; padding: 24px; background: rgba(100,181,246,0.1); border-radius: 12px; display: inline-block; }
+        .footer .contact h3 { color: #64b5f6; margin-bottom: 8px; }
+
+        @media (max-width: 768px) {
+            .data-grid, .pain-grid, .force-grid, .model-comparison, .case-metrics { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 32px; }
+            .section { padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="hero-content">
+            <h1>AI+社区媒体 <span>CPS 2.0</span><br>商业方案</h1>
+            <div class="subtitle">从单场景Agent到多智能体协同的社区媒体数字化革命</div>
+            <div class="tagline">🎯 精准选点 · 🎨 千人千面 · ⏱️ 分钟级优化 · 📊 ROI可视化</div>
+        </div>
+    </div>
+
+    <!-- 第一部分：行业背景 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">01 行业背景</div>
+            <h2>社区媒体数字化势能</h2>
+            <p>DOOH程序化广告与AI营销双轮驱动，社区媒体迎来数字化拐点</p>
+        </div>
+
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="number">30%</div>
+                <div class="label">DOOH程序化渗透率</div>
+                <div class="desc">2025年全球数字户外广告程序化购买占比，预计2026年突破35%</div>
+            </div>
+            <div class="data-card">
+                <div class="number">530亿</div>
+                <div class="label">AI营销市场规模</div>
+                <div class="desc">2025年中国AI+营销市场规模，年复合增长率42%</div>
+            </div>
+            <div class="data-card">
+                <div class="number">85%</div>
+                <div class="label">社区媒体覆盖率</div>
+                <div class="desc">一二线城市社区媒体触达率，日均曝光超2亿人次</div>
+            </div>
+        </div>
+
+        <div style="background: linear-gradient(145deg, #111533 0%, #1a1f4e 100%); border: 1px solid #2d3172; border-radius: 16px; padding: 32px;">
+            <h3 style="color: #64b5f6; margin-bottom: 16px;">📈 核心趋势洞察</h3>
+            <ul style="list-style: none; font-size: 14px; color: #aaa; line-height: 2;">
+                <li>▎ <strong style="color: #fff;">程序化DOOH爆发：</strong>传统户外广告向程序化购买转型，社区媒体作为最后一公里触达载体，成为品牌必争之地</li>
+                <li>▎ <strong style="color: #fff;">AI营销渗透加速：</strong>530亿AI营销市场中，智能投放、创意生成、效果归因三大AI应用增速最快（年增65%+）</li>
+                <li>▎ <strong style="color: #fff;">社区场景价值凸显：</strong>消费者日均社区停留时长1.5小时，决策影响力是商场场景的2.3倍</li>
+                <li>▎ <strong style="color: #fff;">数据合规驱动升级：</strong>隐私计算+设备指纹技术成熟，为跨端归因提供合规基础</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 第二部分：痛点分析 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">02 痛点分析</div>
+            <h2>传统社区投放三大痛点</h2>
+            <p>选点粗放、创意单一、归因黑盒，制约社区媒体ROI提升</p>
+        </div>
+
+        <div class="pain-grid">
+            <div class="pain-card">
+                <div class="icon">🎯</div>
+                <h3>选点粗放</h3>
+                <ul class="symptoms">
+                    <li>依赖人工经验，缺乏数据驱动</li>
+                    <li>人群画像模糊，无法精准匹配</li>
+                    <li>点位选择随机，CPM普遍>15元</li>
+                    <li>缺乏动态调整机制</li>
+                </ul>
+                <div class="impact">⚠️ 影响：平均浪费35%预算在低效点位</div>
+            </div>
+            <div class="pain-card">
+                <div class="icon">🎨</div>
+                <h3>创意单一</h3>
+                <ul class="symptoms">
+                    <li>一套素材投放全量点位</li>
+                    <li>无法适配不同社区人群特征</li>
+                    <li>创意更新周期长（平均15天）</li>
+                    <li>缺乏A/B测试能力</li>
+                </ul>
+                <div class="impact">⚠️ 影响：点击率低于行业均值40%</div>
+            </div>
+            <div class="pain-card">
+                <div class="icon">🔒</div>
+                <h3>归因黑盒</h3>
+                <ul class="symptoms">
+                    <li>线上线下数据割裂</li>
+                    <li>无法追踪用户完整决策路径</li>
+                    <li>ROI计算依赖估算，误差>30%</li>
+                    <li>缺乏实时优化反馈机制</li>
+                </ul>
+                <div class="impact">⚠️ 影响：58%品牌无法评估社区投放真实ROI</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三部分：五力模型方法论 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">03 方法论</div>
+            <h2>AI+社区媒体五力模型升级版</h2>
+            <p>四大Agent驱动，重构社区媒体投放全链路</p>
+        </div>
+
+        <div class="five-force">
+            <div class="force-grid">
+                <div class="force-card">
+                    <div class="force-header">
+                        <div class="force-icon">👥</div>
+                        <h3>覆盖力 → 人群洞察Agent</h3>
+                        <span class="agent-tag">KMeans聚类</span>
+                    </div>
+                    <ul class="features">
+                        <li>LBS+友盟数据融合，精准刻画微细分群体</li>
+                        <li>动态聚类算法，自动划分5-8个人群簇</li>
+                        <li>推荐高ROI投放区域，降低获客成本</li>
+                        <li>人群-点位匹配度评分，指导精准选点</li>
+                    </ul>
+                    <div class="kpi">
+                        <div class="kpi-item"><div class="kpi-value">&lt;9元</div><div class="kpi-label">验证CPM</div></div>
+                        <div class="kpi-item"><div class="kpi-value">68%</div><div class="kpi-label">匹配准确率</div></div>
+                        <div class="kpi-item"><div class="kpi-value">5-8</div><div class="kpi-label">聚类群体数</div></div>
+                    </div>
+                </div>
+
+                <div class="force-card">
+                    <div class="force-header">
+                        <div class="force-icon">🎨</div>
+                        <h3>内容力 → 动态创意Agent</h3>
+                        <span class="agent-tag">AIGC+DCO</span>
+                    </div>
+                    <ul class="features">
+                        <li>基于人群特征生成千人千面文案</li>
+                        <li>社区场景适配（灯箱+语音+电子屏）</li>
+                        <li>DCO动态创意优化，自动匹配最佳素材</li>
+                        <li>AIGC日生成能力超3000组创意</li>
+                    </ul>
+                    <div class="kpi">
+                        <div class="kpi-item"><div class="kpi-value">3.5-6.2%</div><div class="kpi-label">预期CTR</div></div>
+                        <div class="kpi-item"><div class="kpi-value">24组</div><div class="kpi-label">DCO映射</div></div>
+                        <div class="kpi-item"><div class="kpi-value">3000+</div><div class="kpi-label">日生成创意</div></div>
+                    </div>
+                </div>
+
+                <div class="force-card">
+                    <div class="force-header">
+                        <div class="force-icon">⏱️</div>
+                        <h3>营销力 → 智能排期Agent</h3>
+                        <span class="agent-tag">FM+deepMCP</span>
+                    </div>
+                    <ul class="features">
+                        <li>FM线性模型实时预估各点位效果</li>
+                        <li>deepMCP挖掘跨平台隐式关联</li>
+                        <li>分钟级排期规划，预算动态分配</li>
+                        <li>约束优化求解，ROI最大化</li>
+                    </ul>
+                    <div class="kpi">
+                        <div class="kpi-item"><div class="kpi-value">0.813</div><div class="kpi-label">AUC提升</div></div>
+                        <div class="kpi-item"><div class="kpi-value">分钟级</div><div class="kpi-label">规划速度</div></div>
+                        <div class="kpi-item"><div class="kpi-value">92%</div><div class="kpi-label">预算利用率</div></div>
+                    </div>
+                </div>
+
+                <div class="force-card">
+                    <div class="force-header">
+                        <div class="force-icon">📊</div>
+                        <h3>转化力 → 效果归因Agent</h3>
+                        <span class="agent-tag">跨端归因</span>
+                    </div>
+                    <ul class="features">
+                        <li>Cookie-ID+设备指纹跨端身份匹配</li>
+                        <li>线上线下数据打通，构建完整决策路径</li>
+                        <li>多触点归因模型（首次/最终/线性/衰减）</li>
+                        <li>实时ROI看板，秒级数据刷新</li>
+                    </ul>
+                    <div class="kpi">
+                        <div class="kpi-item"><div class="kpi-value">68%</div><div class="kpi-label">跨端匹配率</div></div>
+                        <div class="kpi-item"><div class="kpi-value">4.3</div><div class="kpi-label">平均触点</div></div>
+                        <div class="kpi-item"><div class="kpi-value">245%</div><div class="kpi-label">平均ROI</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第四部分：案例实证 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">04 案例实证</div>
+            <h2>品牌完整数据链</h2>
+            <p>3-5个真实品牌案例，验证CPS 2.0全链路效果</p>
+        </div>
+
+        <div class="case-card">
+            <div class="case-header">
+                <div class="case-logo">🥤</div>
+                <div class="case-info">
+                    <h3>新茶饮品牌A</h3>
+                    <div class="industry">餐饮零售 · 广州全域投放 · 预算¥150K</div>
+                </div>
+            </div>
+            <div class="case-metrics">
+                <div class="case-metric"><div class="value">CPM ¥8.2</div><div class="label">获客成本</div></div>
+                <div class="case-metric"><div class="value">CTR 5.8%</div><div class="label">点击率</div></div>
+                <div class="case-metric"><div class="value">CVR 4.2%</div><div class="label">转化率</div></div>
+                <div class="case-metric"><div class="value">ROI 312%</div><div class="label">投资回报</div></div>
+            </div>
+            <div class="case-data-chain">
+                <strong>数据链还原：</strong><br>
+                ① 人群洞察Agent识别"25-34岁年轻女性"为核心人群，推荐天河体育中心+江南西商圈<br>
+                ② 动态创意Agent生成"下午茶场景"文案，DCO匹配电梯框架+灯箱组合<br>
+                ③ 智能排期Agent优化早晚高峰投放，预算利用率94%<br>
+                ④ 效果归因Agent追踪到"曝光→小程序浏览→到店消费"完整路径，跨端匹配率72%<br>
+                <strong>结果：</strong>较传统投放CPM降低45%，ROI提升180%
+            </div>
+        </div>
+
+        <div class="case-card">
+            <div class="case-header">
+                <div class="case-logo">🏠</div>
+                <div class="case-info">
+                    <h3>家居品牌B</h3>
+                    <div class="industry">家居建材 · 广州+佛山 · 预算¥280K</div>
+                </div>
+            </div>
+            <div class="case-metrics">
+                <div class="case-metric"><div class="value">CPM ¥7.5</div><div class="label">获客成本</div></div>
+                <div class="case-metric"><div class="value">CTR 4.9%</div><div class="label">点击率</div></div>
+                <div class="case-metric"><div class="value">CVR 3.8%</div><div class="label">转化率</div></div>
+                <div class="case-metric"><div class="value">ROI 285%</div><div class="label">投资回报</div></div>
+            </div>
+            <div class="case-data-chain">
+                <strong>数据链还原：</strong><br>
+                ① 人群洞察Agent聚类出"新中产家庭"群体，推荐番禺万达+白云大道社区<br>
+                ② 动态创意Agent生成"家庭好物"系列文案，适配周末时段<br>
+                ③ 智能排期Agent结合FM模型预估，优化点位组合<br>
+                ④ 效果归因Agent发现"社区灯箱→APP浏览→门店体验"转化链路<br>
+                <strong>结果：</strong>周末到店客流增长65%，线上APP新增用户1.2万
+            </div>
+        </div>
+
+        <div class="case-card">
+            <div class="case-header">
+                <div class="case-logo">📱</div>
+                <div class="case-info">
+                    <h3>3C数码品牌C</h3>
+                    <div class="industry">消费电子 · 广州核心区 · 预算¥200K</div>
+                </div>
+            </div>
+            <div class="case-metrics">
+                <div class="case-metric"><div class="value">CPM ¥9.1</div><div class="label">获客成本</div></div>
+                <div class="case-metric"><div class="value">CTR 6.2%</div><div class="label">点击率</div></div>
+                <div class="case-metric"><div class="value">CVR 5.1%</div><div class="label">转化率</div></div>
+                <div class="case-metric"><div class="value">ROI 345%</div><div class="label">投资回报</div></div>
+            </div>
+            <div class="case-data-chain">
+                <strong>数据链还原：</strong><br>
+                ① 人群洞察Agent识别"科技爱好者"人群，锁定珠江新城+北京路商圈<br>
+                ② 动态创意Agent生成"年轻人第一台"系列，DCO适配电子屏+信息流<br>
+                ③ 智能排期Agent利用deepMCP发现跨平台协同效应<br>
+                ④ 效果归因Agent实现"广告→京东浏览→线下体验店→线上成交"全链路追踪<br>
+                <strong>结果：</strong>新品首月销量超预期40%，ROI行业领先
+            </div>
+        </div>
+
+        <div class="case-card">
+            <div class="case-header">
+                <div class="case-logo">🏃</div>
+                <div class="case-info">
+                    <h3>运动品牌D</h3>
+                    <div class="industry">运动服饰 · 广州全城 · 预算¥180K</div>
+                </div>
+            </div>
+            <div class="case-metrics">
+                <div class="case-metric"><div class="value">CPM ¥8.8</div><div class="label">获客成本</div></div>
+                <div class="case-metric"><div class="value">CTR 5.4%</div><div class="label">点击率</div></div>
+                <div class="case-metric"><div class="value">CVR 4.5%</div><div class="label">转化率</div></div>
+                <div class="case-metric"><div class="value">ROI 298%</div><div class="label">投资回报</div></div>
+            </div>
+            <div class="case-data-chain">
+                <strong>数据链还原：</strong><br>
+                ① 人群洞察Agent聚类"运动健身人群"，推荐体育中心+社区公园周边<br>
+                ② 动态创意Agent生成"运动生活方式"系列，早晚时段差异化投放<br>
+                ③ 智能排期Agent优化预算分配，线上60%+线下40%<br>
+                ④ 效果归因Agent跨端匹配追踪"户外广告→APP活动→门店消费"<br>
+                <strong>结果：</strong>会员新增2.5万，门店客流增长45%
+            </div>
+        </div>
+    </div>
+
+    <!-- 第五部分：CPS 2.0分成模型 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">05 分成模型</div>
+            <h2>CPS 2.0：AI驱动的动态分成</h2>
+            <p>从固定比例到智能分润，让每一分投入都有回报</p>
+        </div>
+
+        <div class="commission-model">
+            <div class="model-comparison">
+                <div class="model-card old">
+                    <h3>❌ CPS 1.0 固定分成</h3>
+                    <ul class="features">
+                        <li>固定比例分成（15%-25%）</li>
+                        <li>不考虑投放效果差异</li>
+                        <li>媒体方与品牌方利益不一致</li>
+                        <li>缺乏优化动力</li>
+                        <li>ROI波动风险全由品牌承担</li>
+                    </ul>
+                </div>
+                <div class="model-card new">
+                    <h3>✅ CPS 2.0 动态分成</h3>
+                    <ul class="features">
+                        <li>基于ROI的动态分成比例</li>
+                        <li>AI实时评估投放效果</li>
+                        <li>效果越好分成越高（激励相容）</li>
+                        <li>自动优化反馈循环</li>
+                        <li>风险共担，利益对齐</li>
+                    </ul>
+                </div>
+            </div>
+
+            <table class="commission-table">
+                <thead>
+                    <tr>
+                        <th>ROI区间</th>
+                        <th>基础分成</th>
+                        <th>效果奖励</th>
+                        <th>总分成比例</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ROI &lt; 100%</td>
+                        <td>10%</td>
+                        <td>0%</td>
+                        <td>10%</td>
+                        <td>基础服务，无效果奖励</td>
+                    </tr>
+                    <tr>
+                        <td>100% ≤ ROI &lt; 200%</td>
+                        <td>15%</td>
+                        <td>+3%</td>
+                        <td class="highlight">18%</td>
+                        <td>达标投放，获得基础奖励</td>
+                    </tr>
+                    <tr>
+                        <td>200% ≤ ROI &lt; 300%</td>
+                        <td>20%</td>
+                        <td>+5%</td>
+                        <td class="highlight">25%</td>
+                        <td>优秀投放，效果奖励提升</td>
+                    </tr>
+                    <tr>
+                        <td>ROI ≥ 300%</td>
+                        <td>25%</td>
+                        <td>+5%</td>
+                        <td class="highlight">30%</td>
+                        <td>卓越投放，最高分成比例</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 24px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border-left: 4px solid #4caf50;">
+                <strong style="color: #81c784;">💡 核心优势：</strong><span style="color: #aaa; font-size: 14px;">AI实时评估ROI → 动态调整分成 → 激励媒体方持续优化 → 品牌方零风险获客 → 平台收取技术服务费（固定5%）</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第六部分：未来展望 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="label">06 未来展望</div>
+            <h2>从单场景Agent到多智能体协同</h2>
+            <p>构建社区媒体AI生态，实现真正的千人千面运营</p>
+        </div>
+
+        <div class="future-roadmap">
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h3>Phase 1：单场景Agent（已完成）</h3>
+                    <div class="time-label">2024 Q4 - 2025 Q2</div>
+                    <div class="content">
+                        <ul>
+                            <li>四大核心Agent独立运行（人群洞察/智能排期/动态创意/效果归因）</li>
+                            <li>RAG知识库基础版（行业案例+投放策略）</li>
+                            <li>单城市试点（广州），验证CPM&lt;9元模型</li>
+                            <li>CPS 2.0动态分成模型上线</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <h3>Phase 2：多智能体协同（进行中）</h3>
+                    <div class="time-label">2025 Q3 - 2026 Q1</div>
+                    <div class="content">
+                        <ul>
+                            <li>Agent间自主对话与协作（LangGraph多Agent框架）</li>
+                            <li>规划-执行-反思闭环，自动迭代优化</li>
+                            <li>跨城复制（深圳/上海/北京），规模化验证</li>
+                            <li>接入更多数据源（QADN/天工智投/亲邻APP/友盟）</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <h3>Phase 3：AI生态平台（未来）</h3>
+                    <div class="time-label">2026 Q2 - 2027</div>
+                    <div class="content">
+                        <ul>
+                            <li>开放Agent市场，第三方开发者可接入专用Agent</li>
+                            <li>行业专属Agent（餐饮/零售/3C/家居等）</li>
+                            <li>预测性投放：基于AI预测提前布局优质点位</li>
+                            <li>全球扩展：东南亚/日韩市场复制</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>AI+社区媒体 CPS 2.0 | 重新定义社区广告投放的AI标准</p>
+        <div class="contact">
+            <h3>📧 联系我们</h3>
+            <p>获取完整商业方案PDF · 预约Demo演示 · 洽谈合作</p>
+        </div>
+    </div>
+</body>
+</html>

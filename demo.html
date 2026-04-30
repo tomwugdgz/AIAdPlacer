@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能投放系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a237e;
+        }
+
+        .stat-card .change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .change.up {
+            color: #f5222d;
+        }
+
+        .change.down {
+            color: #52c41a;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header::before {
+            content: "";
+            width: 4px;
+            height: 18px;
+            background: #1a237e;
+            border-radius: 2px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #map-container {
+            height: 400px;
+            background: #e8e8e8;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map-container::before {
+            content: "腾讯地图可视化区域";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+
+        .media-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .media-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .media-item:last-child {
+            border-bottom: none;
+        }
+
+        .media-info {
+            flex: 1;
+        }
+
+        .media-info .name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .media-info .detail {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        .media-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-available {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status-booked {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+
+        .attribution-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .attribution-table th,
+        .attribution-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .attribution-table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #595959;
+        }
+
+        .attribution-table tr:hover {
+            background: #fafafa;
+        }
+
+        .roi-high {
+            color: #f5222d;
+            font-weight: 600;
+        }
+
+        .roi-medium {
+            color: #fa8c16;
+            font-weight: 600;
+        }
+
+        .roi-low {
+            color: #52c41a;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-offline {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .badge-online {
+            background: #f9f0ff;
+            color: #722ed1;
+        }
+
+        .chart-container {
+            height: 200px;
+            margin-top: 16px;
+            background: linear-gradient(180deg, #f6f8fa 0%, #ffffff 100%);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .chart-bar {
+            position: absolute;
+            bottom: 20px;
+            width: 30px;
+            background: linear-gradient(180deg, #1a237e 0%, #3f51b5 100%);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: #8c8c8c;
+        }
+
+        .funnel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .funnel-step {
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            text-align: center;
+            transition: width 0.3s ease;
+        }
+
+        .funnel-step:nth-child(2) {
+            width: 70%;
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+        }
+
+        .funnel-step:nth-child(3) {
+            width: 40%;
+            background: linear-gradient(135deg, #01579b 0%, #0288d1 100%);
+        }
+
+        .funnel-step .step-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .funnel-step .step-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .action-btn {
+            padding: 12px 16px;
+            border: 1px dashed #d9d9d9;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .action-btn:hover {
+            border-color: #1a237e;
+            color: #1a237e;
+            background: #f6f8fa;
+        }
+
+        .action-btn .icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .action-btn .text {
+            font-size: 13px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #8c8c8c;
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        .legend-bar {
+            width: 100px;
+            height: 12px;
+            background: linear-gradient(90deg, #52c41a 0%, #faad14 50%, #f5222d 100%);
+            border-radius: 6px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 AI智能投放系统</h1>
+        <p>基于腾讯地图的地域归因分析与智能投放决策平台</p>
+    </div>
+
+    <div class="container">
+        <!-- 核心指标 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">总曝光量</div>
+                <div class="value">2.4M</div>
+                <div class="change up">↑ 12.5% 较上周</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">总点击量</div>
+                <div class="value">86.2K</div>
+                <div class="change up">↑ 8.3% 较上周</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">转化率</div>
+                <div class="value">3.8%</div>
+                <div class="change up">↑ 0.5% 较上周</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">总投放成本</div>
+                <div class="value">¥128K</div>
+                <div class="change down">↓ 5.2% 较上周</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">投资回报率</div>
+                <div class="value">245%</div>
+                <div class="change up">↑ 18% 较上周</div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 左侧：地图 + 归因表格 -->
+            <div>
+                <!-- 腾讯地图可视化 -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">投放效果地理分布</div>
+                    <div class="card-body">
+                        <div id="map-container"></div>
+                        <div class="heatmap-legend">
+                            <span>效果差</span>
+                            <div class="legend-bar"></div>
+                            <span>效果好</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 地域归因分析 -->
+                <div class="card">
+                    <div class="card-header">地域归因排行</div>
+                    <div class="card-body">
+                        <table class="attribution-table">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>区域</th>
+                                    <th>曝光量</th>
+                                    <th>转化数</th>
+                                    <th>成本</th>
+                                    <th>ROI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>天河区 - 体育中心</td>
+                                    <td>420K</td>
+                                    <td>3,240</td>
+                                    <td>¥18,500</td>
+                                    <td class="roi-high">312%</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>越秀区 - 北京路</td>
+                                    <td>380K</td>
+                                    <td>2,850</td>
+                                    <td>¥22,000</td>
+                                    <td class="roi-high">285%</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>海珠区 - 江南西</td>
+                                    <td>310K</td>
+                                    <td>2,120</td>
+                                    <td>¥15,800</td>
+                                    <td class="roi-medium">268%</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>番禺区 - 市桥</td>
+                                    <td>280K</td>
+                                    <td>1,850</td>
+                                    <td>¥12,200</td>
+                                    <td class="roi-medium">245%</td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>白云区 - 白云大道</td>
+                                    <td>250K</td>
+                                    <td>1,420</td>
+                                    <td>¥10,500</td>
+                                    <td class="roi-low">210%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：媒体资源 + 转化漏斗 -->
+            <div>
+                <!-- 转化漏斗 -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">用户行为转化漏斗</div>
+                    <div class="card-body">
+                        <div class="funnel">
+                            <div class="funnel-step" style="width: 100%">
+                                <div class="step-label">曝光</div>
+                                <div class="step-value">2,400,000</div>
+                            </div>
+                            <div class="funnel-step">
+                                <div class="step-label">点击</div>
+                                <div class="step-value">86,200</div>
+                            </div>
+                            <div class="funnel-step">
+                                <div class="step-label">转化</div>
+                                <div class="step-value">3,280</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div style="text-align: center; padding: 12px; background: #fafafa; border-radius: 4px;">
+                                <div style="font-size: 12px; color: #8c8c8c;">点击率 CTR</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #1a237e;">3.59%</div>
+                            </div>
+                            <div style="text-align: center; padding: 12px; background: #fafafa; border-radius: 4px;">
+                                <div style="font-size: 12px; color: #8c8c8c;">转化率 CVR</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #1a237e;">3.80%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 媒体资源列表 -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">媒体资源状态</div>
+                    <div class="card-body">
+                        <div class="media-list">
+                            <div class="media-item">
+                                <div class="media-info">
+                                    <div class="name">天河城电梯广告 #A102</div>
+                                    <div class="detail">📍 天河区体育东路 | <span class="badge badge-offline">线下</span></div>
+                                </div>
+                                <span class="media-status status-booked">投放中</span>
+                            </div>
+                            <div class="media-item">
+                                <div class="media-info">
+                                    <div class="name">北京路户外大屏 #B045</div>
+                                    <div class="detail">📍 越秀区北京路 | <span class="badge badge-offline">线下</span></div>
+                                </div>
+                                <span class="media-status status-available">可投放</span>
+                            </div>
+                            <div class="media-item">
+                                <div class="media-info">
+                                    <div class="name">微信朋友圈广告</div>
+                                    <div class="detail">📍 广州市全域 | <span class="badge badge-online">线上</span></div>
+                                </div>
+                                <span class="media-status status-booked">投放中</span>
+                            </div>
+                            <div class="media-item">
+                                <div class="media-info">
+                                    <div class="name">珠江新城公交站牌 #C078</div>
+                                    <div class="detail">📍 天河区珠江新城 | <span class="badge badge-offline">线下</span></div>
+                                </div>
+                                <span class="media-status status-booked">投放中</span>
+                            </div>
+                            <div class="media-item">
+                                <div class="media-info">
+                                    <div class="name">抖音信息流广告</div>
+                                    <div class="detail">📍 广州市全域 | <span class="badge badge-online">线上</span></div>
+                                </div>
+                                <span class="media-status status-available">可投放</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快捷操作 -->
+                <div class="card">
+                    <div class="card-header">快捷操作</div>
+                    <div class="card-body">
+                        <div class="quick-actions">
+                            <div class="action-btn">
+                                <div class="icon">➕</div>
+                                <div class="text">新建投放计划</div>
+                            </div>
+                            <div class="action-btn">
+                                <div class="icon">📊</div>
+                                <div class="text">查看归因报告</div>
+                            </div>
+                            <div class="action-btn">
+                                <div class="icon">🤖</div>
+                                <div class="text">AI推荐策略</div>
+                            </div>
+                            <div class="action-btn">
+                                <div class="icon">📍</div>
+                                <div class="text">媒体资源录入</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            AI智能投放系统 v1.0.0 | 基于腾讯地图地域归因分析 | 整合线上线下媒体资源
+        </div>
+    </div>
+
+    <script src="https://map.qq.com/api/gljs?v=1.exp&key=7HKBZ-HQBEM-XS56X-6DBAT-ITXUZ-IDFNG"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化腾讯地图
+            try {
+                const center = new TMap.LatLng(23.132191, 113.266537); // 广州市中心
+                const map = new TMap.Map("map-container", {
+                    center: center,
+                    zoom: 11,
+                    viewMode: '2D'
+                });
+
+                // 投放点位标记
+                const placements = [
+                    { lat: 23.136, lng: 113.326, name: "天河区体育中心", roi: 312 },
+                    { lat: 23.125, lng: 113.264, name: "越秀区北京路", roi: 285 },
+                    { lat: 23.099, lng: 113.264, name: "海珠区江南西", roi: 268 },
+                    { lat: 22.948, lng: 113.366, name: "番禺区市桥", roi: 245 },
+                    { lat: 23.185, lng: 113.259, name: "白云区白云大道", roi: 210 },
+                ];
+
+                // 添加标记点
+                placements.forEach(function(p) {
+                    const color = p.roi > 280 ? '#f5222d' : p.roi > 250 ? '#fa8c16' : '#52c41a';
+                    new TMap.MultiMarker({
+                        map: map,
+                        styles: {
+                            marker: new TMap.MarkerStyle({
+                                width: 25,
+                                height: 35,
+                                anchor: { x: 12, y: 32 },
+                                color: color
+                            })
+                        },
+                        geometries: [{
+                            id: p.name,
+                            styleId: 'marker',
+                            position: new TMap.LatLng(p.lat, p.lng),
+                            properties: {
+                                title: p.name,
+                                content: `ROI: ${p.roi}%`
+                            }
+                        }]
+                    });
+                });
+
+                // 创建热力图
+                const heatmapData = placements.map(function(p) {
+                    return {
+                        lat: p.lat,
+                        lng: p.lng,
+                        count: p.roi / 100
+                    };
+                });
+
+                new TMap.visualization.HeatMap({
+                    radius: 50,
+                    opacity: 0.6,
+                    gradient: {
+                        0: 'rgba(82, 196, 26, 0)',
+                        0.5: 'rgba(250, 173, 20, 0.6)',
+                        1: 'rgba(245, 34, 45, 1)'
+                    }
+                })
+                .data(heatmapData)
+                .addTo(map);
+
+                console.log('腾讯地图加载成功！');
+            } catch (error) {
+                console.log('地图加载失败，显示占位内容:', error);
+                const mapContainer = document.getElementById('map-container');
+                mapContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f0f2f5; color: #8c8c8c; font-size: 14px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">🗺️</div>
+                            <div>腾讯地图加载中...</div>
+                            <div style="font-size: 12px; margin-top: 4px;">请检查API Key配置</div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
