@@ -1,8 +1,26 @@
+import sys
+import types
+import os
+
+# ── Windows 兼容：mock pwd 模块 ──────────────────────
+# transformers 在 Windows 下调用 getpass.getuser() 会触发 import pwd（Unix-only）
+# 提前将 pwd 注入 sys.modules 彻底绕过
+_pwd_mock = types.ModuleType("pwd")
+_pwd_mock.getpwuid = lambda uid: type("FakePw", (), {"pw_name": "user"})()
+_pwd_mock.getpwnam = lambda name: type("FakePw", (), {"pw_name": name})()
+sys.modules["pwd"] = _pwd_mock
+# 设置 USERNAME 环境变量（双重保险）
+os.environ.setdefault("USERNAME", "user")
+os.environ.setdefault("USER", "user")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as main_router
 from app.api.attribution import router as attribution_router
 from app.api.agents import router as agents_router
+from app.bmn.api.brand_routes import router as bmn_brand_router
+from app.bmn.api.asset_routes import router as bmn_asset_router
+from app.bmn.api.workflow_routes import router as bmn_workflow_router
 from app.config import settings
 
 app = FastAPI(
@@ -25,6 +43,10 @@ app.add_middleware(
 app.include_router(main_router, prefix="/api/v1")
 app.include_router(attribution_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v2")
+# BMN 品牌智能增长系统路由
+app.include_router(bmn_brand_router)
+app.include_router(bmn_asset_router)
+app.include_router(bmn_workflow_router)
 
 @app.on_event("startup")
 async def startup():

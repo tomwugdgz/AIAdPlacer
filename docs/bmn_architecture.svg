@@ -1,0 +1,56 @@
+<svg viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<style>
+.t { font: 500 14px/1 sans-serif; fill: var(--color-text-primary); text-anchor: middle; dominant-baseline: central; }
+.ts { font: 400 12px/1 sans-serif; fill: var(--color-text-secondary); text-anchor: middle; dominant-baseline: central; }
+.th { font: 500 13px/1 sans-serif; fill: var(--color-text-primary); text-anchor: middle; dominant-baseline: central; }
+</style>
+
+<!-- Title -->
+<text class="t" x="340" y="24">BMN 五层架构 · L1–L5</text>
+
+<!-- L5 -->
+<rect x="40" y="52" width="600" height="56" rx="12" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+<text class="th" x="340" y="80">L5 增长指标仪表盘 · Management Feedback Dashboard</text>
+<text class="ts" x="340" y="100">认知指标 · 信任指标 · 互动指标 · 转化指标 · 资产指标</text>
+
+<!-- arrow L5→L4 -->
+<polyline points="340,108 340,122" fill="none" stroke="var(--color-border-tertiary)" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<!-- L4 -->
+<rect x="40" y="122" width="600" height="56" rx="12" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+<text class="th" x="340" y="150">L4 多维分发适配器 · Intelligent Distribution Hub</text>
+<text class="ts" x="340" y="170">用户：体验语言 · 客户：价值语言 · 渠道：生意语言 · 投资人：增长语言</text>
+
+<!-- arrow L4→L3 -->
+<polyline points="340,178 340,192" fill="none" stroke="var(--color-border-tertiary)" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<!-- L3 -->
+<rect x="40" y="192" width="600" height="56" rx="12" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+<text class="th" x="340" y="220">L3 AI工作流工厂 · AI Production Factory</text>
+<text class="ts" x="340" y="240">九大标准化工作流 · 新品上市 · 案例生成 · 多渠道改写 · 风险校验</text>
+
+<!-- arrow L3→L2 -->
+<polyline points="340,248 340,262" fill="none" stroke="var(--color-border-tertiary)" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<!-- L2 -->
+<rect x="40" y="262" width="600" height="56" rx="12" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+<text class="th" x="340" y="290">L2 数字资产金库 · Digital Asset Vault</text>
+<text class="ts" x="340" y="310">品牌诉求 · 产品卖点 · 用户场景 · 客户案例 · 行业知识 · 视觉 · 问答口径 · 风险边界</text>
+
+<!-- arrow L2→L1 -->
+<polyline points="340,318 340,332" fill="none" stroke="var(--color-border-tertiary)" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<!-- L1 -->
+<rect x="40" y="332" width="600" height="56" rx="12" fill="var(--color-background-secondary)" stroke="var(--color-border-primary)" stroke-width="0.5"/>
+<text class="th" x="340" y="360">L1 品牌逻辑引擎 · Brand Strategy Engine</text>
+<text class="ts" x="340" y="380">身份定位 · 价值定位 · 信任背书 · 差异化定位 → 生成「母指令 Master Prompt」</text>
+
+<!-- bottom note -->
+<text class="ts" x="340" y="408">闭环反馈 / 自进化 · Step1 资产数字化 → Step2 工作流自动化 → Step3 系统自进化</text>
+</svg>

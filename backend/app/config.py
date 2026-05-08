@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     LLM_API_KEY: Optional[str] = None
     LLM_API_URL: Optional[str] = None
     
+    # LLM 配置（客户可自助配置）
+    LLM_PROVIDER: str = "ollama"
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "modelscope.cn/bge-m3:latest"
+    LLM_ENABLED: bool = True
+    
     # 应用配置
     APP_NAME: str = "AI智能投放系统"
     APP_VERSION: str = "1.0.0"
