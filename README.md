@@ -3,6 +3,7 @@
 > **5C × 5V 社区媒体数字化平台** — 多Agent协同的智能广告投放与效果归因系统
 
 基于腾讯地图地域归因分析，整合线上线下媒体资源，通过四大AI Agent（人群洞察/智能排期/动态创意/效果归因）实现社区媒体全链路数字化。
+<img width="1254" height="1128" alt="image" src="https://github.com/user-attachments/assets/e1acfff5-49f8-47f2-a33c-2adaf8dd30de" />
 
 ---
 
