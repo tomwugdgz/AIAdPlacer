@@ -52,12 +52,12 @@ class AssetVault:
             try:
                 from sentence_transformers import SentenceTransformer
                 self.embedding_model = SentenceTransformer("shibing624/text2vec-base-chinese")
-                print(f"✅ BMN 资产金库 ChromaDB 初始化成功，当前文档数: {self.chroma_collection.count()}")
+                print(f"[OK] BMN 资产金库 ChromaDB 初始化成功，当前文档数: {self.chroma_collection.count()}")
             except Exception as e:
-                print(f"⚠️ Embedding 模型加载失败（将使用模拟模式）: {e}")
+                print(f"[WARN] Embedding 模型加载失败（将使用模拟模式）: {e}")
                 self.embedding_model = None
         except Exception as e:
-            print(f"⚠️ BMN ChromaDB 初始化失败（将使用模拟模式）: {e}")
+            print(f"[WARN] BMN ChromaDB 初始化失败（将使用模拟模式）: {e}")
             self.chroma_collection = None
 
     def _encode(self, text: str) -> list:
