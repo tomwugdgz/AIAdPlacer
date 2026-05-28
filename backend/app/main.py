@@ -16,6 +16,7 @@ from app.bmn.api.brand_routes import router as bmn_brand_router
 from app.bmn.api.asset_routes import router as bmn_asset_router
 from app.bmn.api.workflow_routes import router as bmn_workflow_router
 from app.pdooh_api import router as pdooh_router
+from app.pdooh_mcp import router as pdooh_mcp_router
 from app.config import settings
 
 app = FastAPI(
@@ -44,6 +45,8 @@ app.include_router(bmn_asset_router)
 app.include_router(bmn_workflow_router)
 # pDOOH 数据库 API（连接真实 pdooh 库）
 app.include_router(pdooh_router)
+# pDOOH A2A MCP Server（AI-to-AI 投放接口）
+app.include_router(pdooh_mcp_router)
 
 @app.on_event("startup")
 async def startup():
