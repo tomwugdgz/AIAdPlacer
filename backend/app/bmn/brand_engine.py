@@ -12,7 +12,7 @@ class BrandEngine:
     所有后续 AI 生成任务都以 master_prompt 作为 system prompt 的基础
     """
 
-    def get_brand_config(self, brand_name: str = "亲邻传媒") -> dict:
+    def get_brand_config(self, brand_name: str = "XX传媒") -> dict:
         """读取品牌配置"""
         db = SessionLocal()
         try:
@@ -107,7 +107,7 @@ class BrandEngine:
 - 每次输出后在末尾注明"品牌主张匹配度"自评（1-10分）
 """.strip()
 
-    def get_master_prompt(self, brand_name: str = "亲邻传媒") -> str:
+    def get_master_prompt(self, brand_name: str = "XX传媒") -> str:
         """直接获取 master_prompt 字符串，供其他服务注入 LLM"""
         cfg = self.get_brand_config(brand_name)
         return cfg.get("master_prompt", "")

@@ -120,7 +120,7 @@ def _load_brand_prompt(state: CaseStudyState) -> CaseStudyState:
     节点2：注入品牌母指令
     确保所有输出符合品牌调性
     """
-    prompt = brand_engine.get_master_prompt("亲邻传媒")
+    prompt = brand_engine.get_master_prompt("XX传媒")
     state["brand_prompt"] = prompt or ""
     return state
 
@@ -216,7 +216,7 @@ def _compliance_check(state: CaseStudyState) -> CaseStudyState:
 
     # 检查是否有数据来源标注
     if "87%" in all_text and "来源" not in all_text:
-        issues.append("🟡 中风险：到达率数据未注明来源，需补充「来源：亲邻传媒+第三方调研」")
+        issues.append("🟡 中风险：到达率数据未注明来源，需补充「来源：XX传媒+第三方调研」")
 
     # 高风险：未触发则通过
     if not issues:
@@ -284,7 +284,7 @@ def _fallback_xhs(client: str, industry: str, selling: str) -> str:
 📍 覆盖中高端小区，居民每天进出都看到
 📞 扫码领券，到店核销率 40%+
 
-#社区营销 #{industry} #亲邻传媒 #精准投放"""
+#社区营销 #{industry} #XX传媒 #精准投放"""
 
 
 def _fallback_moments(client: str, selling: str) -> str:
@@ -299,7 +299,7 @@ def _generate_ppt_outline(client: str, industry: str, selling: str, raw: str) ->
     return f"""【{client}社区营销提案大纲】
 
 第1页：封面
-- 标题：{client} × 亲邻传媒 社区精准营销方案
+- 标题：{client} × XX传媒 社区精准营销方案
 - 副标题：让品牌在居民每天必经之路上高频触达
 
 第2页：客户背景 & 营销目标
@@ -309,7 +309,7 @@ def _generate_ppt_outline(client: str, industry: str, selling: str, raw: str) ->
 
 第3页：社区媒体价值
 - 社区场景 vs 写字楼/商场：更高频、更精准
-- 亲邻核心数据：70,000+ 小区、600 万+ DAU
+- XX核心数据：70,000+ 小区、600 万+ DAU
 - 单元门灯箱到达率 87%
 
 第4页：投放方案

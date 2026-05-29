@@ -6,7 +6,7 @@ BMN LLM 客户端 — 统一接口
 使用方法：
     from app.bmn.llm_client import call_llm
     
-    response = call_llm("请用一句话介绍亲邻传媒")
+    response = call_llm("请用一句话介绍XX传媒")
     print(response)
 """
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         # 测试调用
         print("\n测试调用...")
         try:
-            response = call_llm("请用一句话介绍亲邻传媒", timeout=30)
+            response = call_llm("请用一句话介绍XX传媒", timeout=30)
             print(f"响应：{response[:200]}...")
         except Exception as e:
             print(f"调用失败：{e}")

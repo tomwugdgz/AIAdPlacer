@@ -197,7 +197,7 @@ python -m http.server 8080
 # 使用 Python（避免 curl 中文编码问题）
 python -c "
 import requests
-url = 'http://127.0.0.1:5003/api/v2/bmn/brand/config?brand_name=亲邻传媒'
+url = 'http://127.0.0.1:5003/api/v2/bmn/brand/config?brand_name=XX传媒'
 resp = requests.get(url)
 print(resp.json())
 "
@@ -219,7 +219,7 @@ import requests
 
 url = 'http://127.0.0.1:5003/api/v2/bmn/workflows/case_study/run'
 data = {
-    'raw_material': '亲邻传媒社区媒体资源，覆盖70000+小区，开门App 600万+DAU',
+    'raw_material': 'XX传媒社区媒体资源，覆盖70000+小区，开门App 600万+DAU',
     'client_name': '某日化品牌',
     'industry': '日化',
     'product_info': '新品洗发水社区推广'
@@ -244,7 +244,7 @@ print(resp.json())
 ```json
 {
   "id": "xxx",
-  "brand_name": "亲邻传媒",
+  "brand_name": "XX传媒",
   "identity": "品牌身份描述",
   "value_proposition": "核心价值主张",
   "trust_proof": ["信任背书1", "信任背书2"],
@@ -537,7 +537,7 @@ USERNAME=user USER=user python -m uvicorn app.bmn_app:app ...
 
 ## 联系与贡献
 
-- **作者**：Tom（亲邻传媒华南区 AI 负责人）
+- **作者**：Tom（XX传媒华南区 AI 负责人）
 - **项目**：BMN 品牌智能增长操作系统
 - **仓库**：`D:/Mirofish/AIAdPlacer/`
 

@@ -1,6 +1,6 @@
 """
 BMN L1 品牌配置 API
-GET  /api/v2/bmn/brand/config?brand_name=亲邻传媒
+GET  /api/v2/bmn/brand/config?brand_name=XX传媒
 PUT  /api/v2/bmn/brand/config
 """
 from fastapi import APIRouter, Depends, HTTPException
@@ -26,7 +26,7 @@ class BrandConfigUpdate(BaseModel):
 
 
 @router.get("/api/v2/bmn/brand/config")
-async def get_brand_config(brand_name: str = "亲邻传媒"):
+async def get_brand_config(brand_name: str = "XX传媒"):
     result = brand_engine.get_brand_config(brand_name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
@@ -42,7 +42,7 @@ async def upsert_brand_config(data: BrandConfigUpdate):
 
 
 @router.get("/api/v2/bmn/brand/master_prompt")
-async def get_master_prompt(brand_name: str = "亲邻传媒"):
+async def get_master_prompt(brand_name: str = "XX传媒"):
     """直接获取母指令文本，供其他服务注入 LLM"""
     prompt = brand_engine.get_master_prompt(brand_name)
     if not prompt:

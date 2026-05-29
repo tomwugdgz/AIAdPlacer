@@ -1,6 +1,6 @@
 """
 模拟数据源 - 替代真实API
-QADN点位数据 + 天工智投库存 + 亲邻APP行为 + 友盟人群画像
+QADN点位数据 + 天工智投库存 + XXAPP行为 + 友盟人群画像
 """
 import random
 import uuid
@@ -90,7 +90,7 @@ class MockDataSource:
     
     @staticmethod
     def get_qinlin_app_behavior(user_count: int = 1000) -> List[Dict[str, Any]]:
-        """亲邻APP行为数据模拟"""
+        """XXAPP行为数据模拟"""
         behaviors = []
         action_types = ["browse", "click", "search", "purchase", "share", "comment"]
         

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMN 品牌智能增长操作系统</title>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<style>
+  body { margin:0; background:#f5f5f5; font-family:'Microsoft YaHei',sans-serif; }
+  .page { max-width:1000px; margin:0 auto; padding:16px; }
+  pre { white-space:pre-wrap; word-break:break-all; background:#f5f5f5; padding:12px; border-radius:8px; font-size:13px; line-height:1.6; }
+  .card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶栏 -->
+  <div style="background:#2B6CB2;padding:0 24px;display:flex;align-items:center;height:56px;">
+    <span style="color:#fff;font-size:17px;font-weight:600;">BMN 品牌智能增长操作系统</span>
+    <span style="flex:1"></span>
+    <a href="#" onclick="app.router.go('/');return false" style="color:#ffffffcc;margin:0 12px;text-decoration:none;font-size:14px;">品牌引擎</a>
+    <a href="#" onclick="app.router.go('/assets');return false" style="color:#ffffffcc;margin:0 12px;text-decoration:none;font-size:14px;">资产金库</a>
+    <a href="#" onclick="app.router.go('/workflow');return false" style="color:#ffffffcc;margin:0 12px;text-decoration:none;font-size:14px;">案例工作流</a>
+  </div>
+
+  <!-- 品牌引擎页 -->
+  <div v-if="page=='brand'" class="page">
+    <div class="card">
+      <h3 style="margin:0 0 16px;">L1 品牌逻辑引擎</h3>
+      <div style="display:grid;grid-template-columns:100px 1fr;gap:10px 12px;align-items:center;">
+        <label>品牌名称</label><input v-model="brand.brand_name" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+        <label>身份定位</label><textarea v-model="brand.identity" rows="2" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;"></textarea>
+        <label>价值定位</label><textarea v-model="brand.value_proposition" rows="2" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;"></textarea>
+        <label>信任背书</label>
+        <div>
+          <div v-for="(t,i) in brand.trust_proof" style="display:flex;gap:8px;margin-bottom:6px;">
+            <input v-model="brand.trust_proof[i]" style="flex:1;padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+            <button @click="brand.trust_proof.splice(i,1)" style="background:#f56c6c;color:#fff;border:none;border-radius:6px;padding:0 14px;cursor:pointer;">删除</button>
+          </div>
+          <button @click="brand.trust_proof.push(')" style="background:#67c23a;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;">+ 添加</button>
+        </div>
+        <label>差异化定位</label><textarea v-model="brand.differentiation" rows="2" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;"></textarea>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:12px;">
+        <button @click="saveBrand" :disabled="saving" style="background:#2B6CB2;color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:14px;cursor:pointer;">{{saving?'保存中...':'保存并生成母指令'}}</button>
+        <button @click="loadBrand" style="background:#e4e7ed;color:#606266;border:none;border-radius:6px;padding:10px 24px;font-size:14px;cursor:pointer;">重新加载</button>
+      </div>
+    </div>
+    <div class="card" v-if="masterPrompt">
+      <h3 style="margin:0 0 12px;">母指令（Master Prompt）</h3>
+      <pre>{{masterPrompt}}</pre>
+    </div>
+    <div style="color:#909399;font-size:12px;margin-top:12px;">API: GET/PUT /api/v2/bmn/brand/config</div>
+  </div>
+
+  <!-- 资产金库页 -->
+  <div v-if="page=='assets'" class="page">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;">L2 资产金库</h3>
+        <div>
+          <input v-model="searchQ" @keyup.enter="search" placeholder="搜索资产..." style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px 0 0 6px;font-size:14px;width:200px;" />
+          <button @click="search" style="background:#2B6CB2;color:#fff;border:none;border-radius:0 6px 6px 0;padding:8px 16px;cursor:pointer;">搜索</button>
+          <button @click="showAdd=true" style="background:#67c23a;color:#fff;border:none;border-radius:6px;padding:8px 16px;margin-left:8px;cursor:pointer;">+ 新增</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button v-for="t in typeFilters" @click="activeType=t.name;loadAssets()" :style="activeType==t.name?'background:#2B6CB2;color:#fff':'background:#e4e7ed;color:#606266';border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:13px;">{{t.label}}</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#f5f7fa;font-size:13px;color:#909399;">
+          <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #ebeef5;">标题</th>
+          <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #ebeef5;width:100px;">类型</th>
+          <th style="text-align:center;padding:10px 12px;border-bottom:1px solid #ebeef5;width:80px;">使用次数</th>
+          <th style="text-align:center;padding:10px 12px;border-bottom:1px solid #ebeef5;width:120px;">操作</th>
+        </tr>
+        <tr v-for="a in assets" style="font-size:13px;border-bottom:1px solid #ebeef5;">
+          <td style="padding:10px 12px;">{{a.title}}</td>
+          <td style="padding:10px 12px;">{{typeLabels[a.asset_type]||a.asset_type}}</td>
+          <td style="padding:10px 12px;text-align:center;">{{a.usage_count}}</td>
+          <td style="padding:10px 12px;text-align:center;">
+            <button @click="viewAsset(a)" style="background:none;border:1px solid #2B6CB2;color:#2B6CB2;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;margin-right:6px;">查看</button>
+            <button @click="delAsset(a)" style="background:none;border:1px solid #f56c6c;color:#f56c6c;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">删除</button>
+          </td>
+        </tr>
+        <tr v-if="!assets.length"><td colspan="4" style="text-align:center;padding:24px;color:#909399;">暂无资产，点击「新增」创建</td></tr>
+      </table>
+      <div style="margin-top:12px;text-align:center;color:#909399;font-size:13px;">共 {{total}} 条</div>
+    </div>
+
+    <!-- 新增对话框 -->
+    <div v-if="showAdd" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
+      <div style="background:#fff;border-radius:12px;width:680px;max-height:85vh;overflow:auto;padding:24px;">
+        <h3 style="margin:0 0 16px;">新增资产</h3>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:10px 12px;align-items:center;">
+          <label>类型</label>
+          <select v-model="form.asset_type" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;">
+            <option value="brand_appeal">品牌诉求</option>
+            <option value="product_selling">产品卖点</option>
+            <option value="user_scenario">用户场景</option>
+            <option value="customer_case">客户案例</option>
+            <option value="industry_knowledge">行业知识</option>
+            <option value="visual_asset">视觉资产</option>
+            <option value="qa_script">问答口径</option>
+            <option value="risk_boundary">风险边界</option>
+          </select>
+          <label>标题</label><input v-model="form.title" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+          <label>内容</label><textarea v-model="form.content" rows="7" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;"></textarea>
+          <label>标签</label><input v-model="form.tagsStr" placeholder="逗号分隔" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+          <label>来源</label><input v-model="form.source" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+        </div>
+        <div style="margin-top:16px;text-align:right;">
+          <button @click="showAdd=false" style="background:#e4e7ed;color:#606266;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;margin-right:8px;">取消</button>
+          <button @click="saveAsset" style="background:#2B6CB2;color:#fff;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 查看对话框 -->
+    <div v-if="showView" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
+      <div style="background:#fff;border-radius:12px;width:700px;max-height:85vh;overflow:auto;padding:24px;">
+        <h3 style="margin:0 0 12px;">资产详情</h3>
+        <pre>{{viewContent}}</pre>
+        <div style="margin-top:16px;text-align:right;">
+          <button @click="showView=false" style="background:#e4e7ed;color:#606266;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;">关闭</button>
+        </div>
+      </div>
+    </div>
+    <div style="color:#909399;font-size:12px;margin-top:12px;">API: GET/POST/DELETE /api/v2/bmn/assets</div>
+  </div>
+
+  <!-- 案例工作流页 -->
+  <div v-if="page=='workflow'" class="page">
+    <div class="card">
+      <h3 style="margin:0 0 16px;">L3 客户案例生成工作流</h3>
+      <div style="display:grid;grid-template-columns:90px 1fr;gap:10px 12px;align-items:center;">
+        <label>客户名称</label><input v-model="wf.client_name" placeholder="如：某药店连锁品牌" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+        <label>所属行业</label><input v-model="wf.industry" placeholder="如：医药、日化、家电" style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;" />
+        <label>原始素材</label><textarea v-model="wf.raw_material" rows="6" placeholder="粘贴客户提供的背景素材、过往案例、产品介绍等..." style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;"></textarea>
+      </div>
+      <div style="margin-top:16px;">
+        <button @click="runWorkflow" :disabled="running" style="background:#2B6CB2;color:#fff;border:none;border-radius:6px;padding:12px 32px;font-size:15px;cursor:pointer;font-weight:500;">{{running?'生成中...':'🚀 运行工作流'}}</button>
+      </div>
+    </div>
+
+    <div class="card" v-if="wfResult.copies" style="margin-top:16px;">
+      <h3 style="margin:0 0 16px;">生成结果</h3>
+      <div style="display:flex;gap:12px;margin-bottom:16px;border-bottom:1px solid #ebeef5;font-size:14px;">
+        <span @click="activeTab='xhs'" :style="activeTab=='xhs'?'border-bottom:2px solid #2B6CB2;color:#2B6CB2;cursor:pointer;padding:8px 16px;font-weight:500':'cursor:pointer;padding:8px 16px;color:#909399;'"">小红书文案</span>
+        <span @click="activeTab='moments'" :style="activeTab=='moments'?'border-bottom:2px solid #2B6CB2;color:#2B6CB2;cursor:pointer;padding:8px 16px;font-weight:500':'cursor:pointer;padding:8px 16px;color:#909399;'"">朋友圈文案</span>
+        <span @click="activeTab='ppt'" :style="activeTab=='ppt'?'border-bottom:2px solid #2B6CB2;color:#2B6CB2;cursor:pointer;padding:8px 16px;font-weight:500':'cursor:pointer;padding:8px 16px;color:#909399;'"">PPT大纲</span>
+        <span @click="activeTab='compliance'" :style="activeTab=='compliance'?'border-bottom:2px solid #2B6CB2;color:#2B6CB2;cursor:pointer;padding:8px 16px;font-weight:500':'cursor:pointer;padding:8px 16px;color:#909399;'"">合规检查</span>
+      </div>
+      <pre v-if="activeTab=='xhs'">{{wfResult.copies?.xhs||'（未生成）'}}</pre>
+      <pre v-if="activeTab=='moments'">{{wfResult.copies?.moments||'（未生成）'}}</pre>
+      <pre v-if="activeTab=='ppt'">{{wfResult.copies?.ppt_outline||'（未生成）'}}</pre>
+      <div v-if="activeTab=='compliance'">
+        <div v-for="c in wfResult.compliance" style="padding:8px 12px;margin:4px 0;background:#f5f5f5;border-radius:6px;font-size:13px;">{{c}}</div>
+      </div>
+    </div>
+    <div style="color:#909399;font-size:12px;margin-top:12px;">API: POST /api/v2/bmn/workflows/case_study/run</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/axios@1/dist/axios.min.js"></script>
+<script>
+const { createApp, ref, onMounted } = Vue
+const app = createApp({
+  setup() {
+    const page = ref('brand')
+    const router = (p) => { page.value = p.replace('#','') }
+
+    // ── 品牌引擎 ──
+    const brand = ref({ brand_name:'XX传媒', identity:'', value_proposition:'', trust_proof:[], differentiation:'' })
+    const masterPrompt = ref('')
+    const saving = ref(false)
+    const loadBrand = async () => {
+      try {
+        const r = await axios.get(`/api/v2/bmn/brand/config?brand_name=${encodeURIComponent(brand.value.brand_name)}`)
+        Object.assign(brand.value, r.data, { trust_proof: r.data.trust_proof || [] })
+        const p = await axios.get(`/api/v2/bmn/brand/master_prompt?brand_name=${encodeURIComponent(brand.value.brand_name)}`)
+        masterPrompt.value = p.data.master_prompt || ''
+      } catch(e) { console.warn(e) }
+    }
+    const saveBrand = async () => {
+      saving.value = true
+      try {
+        await axios.put('/api/v2/bmn/brand/config', brand.value)
+        await loadBrand()
+        alert('✅ 保存成功，母指令已更新！')
+      } catch(e) { alert('❌ 保存失败：' + (e.response?.data?.detail||e.message)) }
+      finally { saving.value = false }
+    }
+
+    // ── 资产金库 ──
+    const assets = ref([])
+    const total = ref(0)
+    const searchQ = ref('')
+    const activeType = ref('')
+    const showAdd = ref(false)
+    const showView = ref(false)
+    const viewContent = ref('')
+    const typeFilters = [
+      { name:'', label:'全部' },{ name:'brand_appeal', label:'品牌诉求' },{ name:'product_selling', label:'产品卖点' },
+      { name:'user_scenario', label:'用户场景' },{ name:'customer_case', label:'客户案例' },
+      { name:'industry_knowledge', label:'行业知识' },{ name:'visual_asset', label:'视觉资产' },
+      { name:'qa_script', label:'问答口径' },{ name:'risk_boundary', label:'风险边界' },
+    ]
+    const typeLabels = {'brand_appeal':'品牌诉求','product_selling':'产品卖点','user_scenario':'用户场景',
+      'customer_case':'客户案例','industry_knowledge':'行业知识','visual_asset':'视觉资产',
+      'qa_script':'问答口径','risk_boundary':'风险边界'}
+    const form = ref({ asset_type:'brand_appeal', title:'', content:'', tagsStr:'', source:'' })
+    const loadAssets = async () => {
+      try {
+        const params = {}
+        if (activeType.value) params.asset_type = activeType.value
+        if (searchQ.value) params.keyword = searchQ.value
+        const r = await axios.get('/api/v2/bmn/assets', { params })
+        assets.value = r.data.items || []
+        total.value = r.data.total || 0
+      } catch(e) { console.warn(e) }
+    }
+    const search = () => { loadAssets() }
+    const viewAsset = (a) => {
+      viewContent.value = a.content || ''
+      showView.value = true
+    }
+    const delAsset = async (a) => {
+      if (!confirm(`确定删除「${a.title}」？`)) return
+      try {
+        await axios.delete(`/api/v2/bmn/assets/${a.id}`)
+        alert('✅ 已删除')
+        loadAssets()
+      } catch(e) { alert('❌ 删除失败') }
+    }
+    const saveAsset = async () => {
+      const d = { ...form.value, tags: form.value.tagsStr.split(/[,，]/).map(s=>s.trim()).filter(Boolean) }
+      try {
+        await axios.post('/api/v2/bmn/assets', d)
+        alert('✅ 保存成功')
+        showAdd.value = false
+        loadAssets()
+      } catch(e) { alert('❌ 保存失败：' + (e.response?.data?.detail||e.message)) }
+    }
+
+    // ── 工作流 ──
+    const wf = ref({ client_name:'', industry:'', raw_material:'' })
+    const running = ref(false)
+    const wfResult = ref({})
+    const activeTab = ref('xhs')
+    const runWorkflow = async () => {
+      if (!wf.value.client_name || !wf.value.raw_material) { alert('请填写客户名称和原始素材'); return }
+      running.value = true
+      try {
+        const r = await axios.post('/api/v2/bmn/workflows/case_study/run', wf.value)
+        wfResult.value = r.data.result || {}
+        alert('✅ 工作流执行完成！')
+      } catch(e) {
+        alert('❌ 执行失败：' + (e.response?.data?.detail||e.message))
+      } finally { running.value = false }
+    }
+
+    onMounted(() => {
+      const hash = location.hash.replace('#','') || 'brand'
+      page.value = hash
+      loadBrand()
+      loadAssets()
+    })
+    window.addEventListener('hashchange', () => { page.value = location.hash.replace('#','') || 'brand' })
+    return {
+      page, router,
+      brand, masterPrompt, saving, loadBrand, saveBrand,
+      assets, total, searchQ, activeType, showAdd, showView, viewContent,
+      typeFilters, typeLabels, form, loadAssets, search, viewAsset, delAsset, saveAsset,
+      wf, running, wfResult, activeTab, runWorkflow,
+    }
+  },
+})
+app.mount('#app')
+</script>
+</body>
+</html>

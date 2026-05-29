@@ -232,7 +232,7 @@ async def mcp_tools_call(body: ToolCallRequest, request: Request):
         screen = next((s for s in MOCK_SCREENS if s["id"] == screen_id), None)
         if not screen:
             raise HTTPException(status_code=404, detail="Screen not found")
-        # 模拟人群画像（参考亲邻5V模型）
+        # 模拟人群画像（参考XX5V模型）
         audience = {
             "screen_id": screen_id,
             "screen_name": screen["name"],
@@ -319,7 +319,7 @@ async def mcp_tools_call(body: ToolCallRequest, request: Request):
                 "estimated_roi": "1:4.2",
                 "top_screen": "猎德花园广告屏（转化率最高）",
             },
-            "note": "报告数据为模拟值，真实数据需接入亲邻开门行动数据"
+            "note": "报告数据为模拟值，真实数据需接入XX开门行动数据"
         }
         return {"content": [{"type": "text",
                               "text": json.dumps(report, ensure_ascii=False)}]}
@@ -397,13 +397,13 @@ name: pdooh-agent
 description: >
   pDOOH AI原生投放平台 Skill。
   让 AI Agent 能直接调用 pDOOH 投放能力（查询屏、创建计划、合规审核、效果报告）。
-  参考亲邻科技5V数据模型，支持人群洞察和智能选点。
+  参考XX科技5V数据模型，支持人群洞察和智能选点。
 
 triggers:
   - "pDOOH"
   - "户外广告投放"
   - "社区屏"
-  - "亲邻"
+  - "XX科技"
   - "程序化户外"
   - "audience insight"
   - "投放计划"
@@ -464,7 +464,7 @@ async def health():
         "tools_count": len(PDOOH_MCP_TOOLS),
         "mcp_endpoint": "/api/v2/mcp/pdooh/tools/call",
         "skill_endpoint": "/api/v2/mcp/pdooh/skill.yaml",
-        "reference": "亲邻科技5V数据模型",
+        "reference": "XX科技5V数据模型",
     }
 
 

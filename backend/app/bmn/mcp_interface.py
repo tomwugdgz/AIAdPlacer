@@ -32,7 +32,7 @@ MCP_TOOLS = [
             "properties": {
                 "brand_name": {
                     "type": "string",
-                    "description": "品牌名称，如：亲邻传媒、分众传媒、新潮传媒"
+                    "description": "品牌名称，如：XX传媒、分众传媒、新潮传媒"
                 }
             },
             "required": ["brand_name"]
@@ -84,7 +84,7 @@ MCP_TOOLS = [
             "properties": {
                 "raw_material": {
                     "type": "string",
-                    "description": "原始素材（必填），包括品牌/产品信息、数据、卖点等。如：亲邻传媒社区媒体资源，覆盖70000+小区，开门App 600万+DAU，单元门灯箱日均到达率87%"
+                    "description": "原始素材（必填），包括品牌/产品信息、数据、卖点等。如：XX传媒社区媒体资源，覆盖70000+小区，开门App 600万+DAU，单元门灯箱日均到达率87%"
                 },
                 "client_name": {
                     "type": "string",
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     
     # 测试 1：获取品牌配置
     print("\n[测试 1] 获取品牌配置...")
-    result = executor.execute("bmn_get_brand_config", {"brand_name": "亲邻传媒"})
+    result = executor.execute("bmn_get_brand_config", {"brand_name": "XX传媒"})
     print(result["content"][0]["text"][:500])
     
     # 测试 2：搜索资产
