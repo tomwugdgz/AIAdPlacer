@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  🌐 在线体验：<a href="http://duckwolf.cn">duckwolf.cn</a> ｜
-  📖 技术博客：<a href="http://duckwolf.cn/blog">duckwolf.cn/blog</a> ｜
-  💬 联系：<a href="mailto:tom@duckwolf.cn">tom@duckwolf.cn</a>
+  🌐 在线体验：<a href="http://duckwolf.cn/cps2.html">duckwolf.cn</a> ｜
+  📖 技术博客：<a href="http://duckwolf.cn/cps1.html">duckwolf.cn/blog</a> ｜
+  💬 联系：<a href="mailto:duckwolf@qq.com">tom@duckwolf.cn</a>
 </p>
 
 ---
