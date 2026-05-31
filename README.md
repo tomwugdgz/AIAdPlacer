@@ -1,4 +1,14 @@
-# 🎯 AIAdPlacer — 全球首个 AI 驱动的 pDOOH 智能投放系统
+# 🎯 AIAdPlacer — 户外广告行业的AI Copilot工具箱
+
+核心价值：
+- 帮广告主做投放决策（AI分析+推荐）
+- 帮媒体主管理库存（AI排期+定价）
+- 帮代理商提升效率（AI报告+竞品监控）
+
+落地路径：
+v1 → 成为Tom的私人工具（不求商业化，先验证）
+v2 → 卖给3-5个小广告主（测试付费意愿）
+v3 → 做成SaaS平台（按投放金额收费）
 
 <p align="center">
   <img src="https://img.shields.io/badge/AI-Native-red?style=flat-square" />
