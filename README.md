@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  🌐 在线体验：<a href="http://duckwolf.cn">duckwolf.cn</a> ｜
-  📖 技术博客：<a href="http://duckwolf.cn/blog">duckwolf.cn/blog</a> ｜
-  💬 联系：<a href="mailto:tom@duckwolf.cn">tom@duckwolf.cn</a>
+  🌐 在线体验：<a href="http://duckwolf.cn/cps2.html">duckwolf.cn</a> ｜
+  📖 技术博客：<a href="http://duckwolf.cn/cps1.html">duckwolf.cn/blog</a> ｜
+  💬 联系：<a href="mailto:duckwolf@qq.com">tom@duckwolf.cn</a>
 </p>
 
 ---
@@ -29,7 +29,7 @@ AIAdPlacer 填补了这个空白：
 - ✅ **全球首个** AI Native pDOOH 开源系统
 - ✅ 完整实现 **5V 数据模型**（人口 / 消费 / 社区 / 门禁 / 行为）
 - ✅ **A2A 接口**（AI-to-AI），其他 AI Agent 可直接调用投放能力
-- ✅ 对接**腾讯地图 LBS** + **亲邻科技**社区数据底座
+- ✅ 对接**腾讯地图 LBS** + **青柠科技**社区数据底座
 - ✅ 内置 **LLM Agent 编排**（人群洞察 → 智能排期 → 动态创意 → 效果归因）
 
 ---
@@ -63,7 +63,7 @@ AIAdPlacer 填补了这个空白：
 
 ---
 
-## 🗃️ 核心数据模型（亲邻科技 5V 底座）
+## 🗃️ 核心数据模型（青柠科技 5V 底座）
 
 | V层 | 数据维度 | 表中字段 | 业务价值 |
 |------|----------|----------|----------|
@@ -73,7 +73,7 @@ AIAdPlacer 填补了这个空白：
 | **V4** 门禁动作 ⭐ | 扫码/刷脸/刷卡记录 | `spatial_trajectory` | **独家优势**：真实到店证据 |
 | **V5** 线上行为 | APP使用/浏览轨迹 | `person_dmp_tags (extended)` | 跨屏人群扩展 |
 
-> 💡 **V4 门禁数据**是亲邻科技的核心壁垒——每次「开门」都是一次真实到店验证，任何其他 pDOOH 系统都不具备这个数据维度。
+> 💡 **V4 门禁数据**是青柠科技的核心壁垒——每次「开门」都是一次真实到店验证，任何其他 pDOOH 系统都不具备这个数据维度。
 
 ---
 
@@ -204,7 +204,7 @@ AIAdPlacer/
 ├── demo.html                    # 前端 Demo（腾讯地图）
 ├── docs/
 │   ├── schema.sql             # pDOOH 数据库 Schema
-│   ├── pdoh_whitepaper_v2.md  # 项目白皮书（含亲邻5V论证）
+│   ├── pdoh_whitepaper_v2.md  # 项目白皮书（含青柠5V论证）
 │   └── github_upload_guide.md # GitHub 上传指南
 └── README.md
 ```
@@ -275,8 +275,8 @@ result = mcp_call(
 - [x] **v2.0** pDOOH 数据库设计 + 真实数据 API
 - [x] `demo.html` 连接真实数据库
 - [x] A2A MCP Server 接口
-- [x] 亲邻科技 5V 数据模型论证白皮书
-- [ ] v2.1 接入真实亲邻科技数据（广州试点）
+- [x] 青柠科技 5V 数据模型论证白皮书
+- [ ] v2.1 接入真实青柠科技数据（广州试点）
 - [ ] v2.2 数字联盟可信 ID SDK 集成
 - [ ] v3.0 多城市扩展（深圳/佛山/东莞）
 
