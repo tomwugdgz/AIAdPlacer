@@ -40,12 +40,14 @@ AIAdPlacer 填补了这个空白：
 ┌─────────────────────────────────────────────────────┐
 │                 前端展示层                        │
 │  demo.html（腾讯地图可视化）· bmn-frontend/     │
+│  bus-demo.html（公交线路热力图）                │
 └──────────────────┬──────────────────────────────┘
                      │ REST / WebSocket
 ┌─────────────────────────────────────────────────────┐
 │                FastAPI 后端层  (Port 5002)          │
 │  /api/v2/pdooh/*  ·  /api/v2/agents/*           │
 │  /api/v2/rag/*   ·  /api/v2/mcp/*  (A2A)      │
+│  /api/v2/bus/*    ·  /api/v2/bus-bidding/*    │
 └──────────────────┬──────────────────────────────┘
                      │
 ┌─────────────────────────────────────────────────────┐
@@ -133,6 +135,26 @@ cd backend
 
 ---
 
+### bus-pDOOH 子系统（公交线路 programmatic 投放）⭐ 新增
+
+针对公交车身广告的独立竞价投放模块：
+
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| POST | `/api/v2/bus/routes/import` | Excel 批量导入线路（29城/95线路） |
+| GET | `/api/v2/bus/routes` | 线路列表（城市/等级/价格/热力筛选） |
+| GET | `/api/v2/bus/routes/{id}` | 线路详情 |
+| POST | `/api/v2/bus/bidding/calculate` | 竞价计算（等级系数 + 时段溢价） |
+| POST | `/api/v2/bus/bidding/multi` | 多线路组合竞价 |
+| POST | `/api/v2/bus/campaigns` | 创建投放方案 |
+| POST | `/api/v2/bus/campaigns/{id}/submit-review` | 提交 AI审核 |
+| POST | `/api/v2/bus/campaigns/{id}/attribution` | 效果归因报告 |
+| GET | `/api/v2/bus/recommend` | 智能线路推荐 |
+
+演示页面：`backend/bus-demo.html`（线路热力地图 + 竞价计算器 + AI审核模拟）
+
+---
+
 ## 📡 API 文档
 
 启动后访问 Swagger 自动文档：**http://127.0.0.1:5002/docs**
@@ -198,12 +220,22 @@ AIAdPlacer/
 │   │   ├── pdooh_api.py       # pDOOH 真实数据 API（9个端点）
 │   │   ├── pdooh_mcp.py       # A2A MCP Server 接口
 │   │   ├── models.py           # SQLAlchemy 模型
+│   │   ├── bus/                # ⭐ bus-pDOOH 子系统
+│   │   │   ├── models.py       # 5个ORM模型（Routes/Campaigns/Attribution...）
+│   │   │   ├── schemas.py      # Pydantic 请求/响应模型
+│   │   │   ├── api.py          # 16个REST端点
+│   │   │   └── services/       # 竞价引擎/热力评分/AI审核/归因
+│   │   ├── services/
+│   │   │   └── ollama_client.py # Ollama HTTP 客户端
 │   │   ├── api/                # v1 传统 REST API
 │   │   └── bmn/               # BMN 品牌增长系统
+│   ├── bus-demo.html           # ⭐ bus-pDOOH 演示页面
 │   └── venv/
 ├── demo.html                    # 前端 Demo（腾讯地图）
 ├── docs/
 │   ├── schema.sql             # pDOOH 数据库 Schema
+│   ├── bus-pdooh-prd.md       # ⭐ bus-pDOOH 产品需求文档
+│   ├── bus-pdooh-system-design.md # ⭐ bus-pDOOH 系统设计
 │   ├── pdoh_whitepaper_v2.md  # 项目白皮书（含青柠5V论证）
 │   └── github_upload_guide.md # GitHub 上传指南
 └── README.md
@@ -276,6 +308,7 @@ result = mcp_call(
 - [x] `demo.html` 连接真实数据库
 - [x] A2A MCP Server 接口
 - [x] 青柠科技 5V 数据模型论证白皮书
+- [x] **⭐ bus-pDOOH 子系统**完整实现（线路管理/竞价引擎/AI审核/效果归因/演示页）
 - [ ] v2.1 接入真实青柠科技数据（广州试点）
 - [ ] v2.2 数字联盟可信 ID SDK 集成
 - [ ] v3.0 多城市扩展（深圳/佛山/东莞）
