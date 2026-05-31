@@ -17,6 +17,7 @@ from app.bmn.api.asset_routes import router as bmn_asset_router
 from app.bmn.api.workflow_routes import router as bmn_workflow_router
 from app.pdooh_api import router as pdooh_router
 from app.pdooh_mcp import router as pdooh_mcp_router
+from app.bus.api import router as bus_router
 from app.config import settings
 
 app = FastAPI(

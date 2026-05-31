@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bus-pDOOH — 公交车身程序化投放演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #16a34a; --primary-dark: #15803d; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; }
+        .tab-active { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 600; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: box-shadow .2s; }
+        .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-S { background: #fef3c7; color: #92400e; }
+        .badge-A-plus-plus { background: #dbeafe; color: #1e40af; }
+        .badge-A-plus { background: #d1fae5; color: #065f46; }
+        .badge-A { background: #f3f4f6; color: #374151; }
+        .heat-low { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+        .heat-mid { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+        .heat-high { background: linear-gradient(135deg, #fecaca, #fca5a5); }
+        .btn { padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; }
+        .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+        .progress-bar { height: 6px; border-radius: 3px; background: #e5e7eb; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+        .map-container { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 12px; min-height: 400px; position: relative; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn .3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+                <h1 class="text-lg font-bold text-gray-900">bus-pDOOH <span class="text-gray-400 font-normal text-sm">公交车身程序化投放平台</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500">AIAdPlacer CPS 2.0 子系统</span>
+                <span class="badge" style="background:#ecfdf5;color:#065f46;">v0.1</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 flex gap-6">
+            <button onclick="switchTab('map')" id="tab-map" class="py-3 px-1 text-sm tab-active transition">🗺️ 线路热力地图</button>
+            <button onclick="switchTab('recommend')" id="tab-recommend" class="py-3 px-1 text-sm text-gray-500 hover:text-gray-700 transition">💡 智能推荐</button>
+            <button onclick="switchTab('bidding')" id="tab-bidding" class="py-3 px-1 text-sm text-gray-500 hover:text-gray-700 transition">🧮 竞价计算器</button>
+            <button onclick="switchTab('review')" id="tab-review" class="py-3 px-1 text-sm text-gray-500 hover:text-gray-700 transition">🤖 AI审核</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- Tab 1: 热力地图 -->
+        <div id="panel-map" class="fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-xl font-bold">线路热力地图</h2>
+                    <p class="text-sm text-gray-500 mt-1">基于腾讯地图 POI 密度 + 周边人流 + 时段综合评分</p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="map-city" class="input w-32" onchange="renderMap()">
+                        <option value="深圳">深圳</option>
+                        <option value="广州">广州</option>
+                        <option value="北京">北京</option>
+                        <option value="上海">上海</option>
+                        <option value="成都">成都</option>
+                    </select>
+                </div>
+            </div>
+            <div class="map-container p-4" id="map-area">
+                <!-- 模拟公交线路热力图 -->
+                <div class="flex gap-4 h-full">
+                    <div class="flex-1 flex flex-col gap-3" id="route-list">
+                        <!-- 动态生成 -->
+                    </div>
+                    <div class="w-64 bg-white rounded-xl p-4">
+                        <h3 class="font-semibold text-sm mb-3">热力图例</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded heat-high"></div><span class="text-xs">80-100 高热力</span></div>
+                            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded heat-mid"></div><span class="text-xs">50-79 中热力</span></div>
+                            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded heat-low"></div><span class="text-xs">0-49 低热力</span></div>
+                        </div>
+                        <div class="mt-6 p-3 bg-gray-50 rounded-lg">
+                            <div class="text-xs text-gray-500">评分维度</div>
+                            <div class="text-sm mt-1">POI密度 40%</div>
+                            <div class="progress-bar mt-1"><div class="progress-fill bg-yellow-400" style="width:40%"></div></div>
+                            <div class="text-sm mt-2">周边人流 40%</div>
+                            <div class="progress-bar mt-1"><div class="progress-fill bg-blue-400" style="width:40%"></div></div>
+                            <div class="text-sm mt-2">时段权重 20%</div>
+                            <div class="progress-bar mt-1"><div class="progress-fill bg-green-400" style="width:20%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: 智能推荐 -->
+        <div id="panel-recommend" class="hidden fade-in">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold">💡 智能线路推荐</h2>
+                <p class="text-sm text-gray-500 mt-1">输入城市和预算，AI 自动匹配最优线路组合</p>
+            </div>
+            <div class="card p-6 mb-6">
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">城市</label>
+                        <select id="rec-city" class="input">
+                            <option>深圳</option><option>广州</option><option>北京</option><option>上海</option><option>成都</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">预算（元）</label>
+                        <input id="rec-budget" type="number" class="input" value="500000" step="10000">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">投放天数</label>
+                        <input id="rec-days" type="number" class="input" value="30" min="1" max="365">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="doRecommend()" class="btn btn-primary w-full">🔍 智能推荐</button>
+                    </div>
+                </div>
+            </div>
+            <div id="rec-results" class="grid grid-cols-3 gap-4">
+                <!-- 动态生成推荐卡片 -->
+            </div>
+        </div>
+
+        <!-- Tab 3: 竞价计算器 -->
+        <div id="panel-bidding" class="hidden fade-in">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold">🧮 竞价计算器</h2>
+                <p class="text-sm text-gray-500 mt-1">选择线路 + 时长 + 车辆数，实时计算总价和展示量</p>
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">线路选择</h3>
+                    <div class="mb-4">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">城市</label>
+                        <select id="bid-city" class="input" onchange="loadBidRoutes()">
+                            <option>深圳</option><option>广州</option><option>北京</option><option>上海</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">线路</label>
+                        <select id="bid-route" class="input" onchange="updateBidPreview()">
+                            <!-- 动态加载 -->
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 block mb-1">投放天数</label>
+                            <input id="bid-days" type="number" class="input" value="30" min="1" onchange="updateBidPreview()">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 block mb-1">车辆数</label>
+                            <input id="bid-vehicles" type="number" class="input" value="10" min="1" onchange="updateBidPreview()">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 block mb-1">时段</label>
+                            <select id="bid-time" class="input" onchange="updateBidPreview()">
+                                <option value="normal">平峰 ×1.0</option>
+                                <option value="evening_rush">晚高峰 ×1.2</option>
+                                <option value="morning_rush">早高峰 ×1.3</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">竞价结果</h3>
+                    <div id="bid-result" class="space-y-3">
+                        <div class="text-center text-gray-400 py-8">请选择线路和参数</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 竞价公式说明 -->
+            <div class="card p-4 mt-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">📐 竞价公式</h4>
+                <div class="grid grid-cols-3 gap-4 text-xs text-gray-500">
+                    <div><strong>基础价格</strong> = 月单价 ÷ 30 × 天数 × 等级系数 × 时段溢价</div>
+                    <div><strong>展示量</strong> = 车辆数 × 日均客流 × 热点系数 × 天数</div>
+                    <div><strong>覆盖人群(30d)</strong> = 车辆数 × 日均客流 × 热点系数 × 30</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: AI审核 -->
+        <div id="panel-review" class="hidden fade-in">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold">🤖 AI 方案审核</h2>
+                <p class="text-sm text-gray-500 mt-1">基于 Qwen3.5-9B 本地模型，多维度审核投放方案合理性</p>
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">方案信息</h3>
+                    <div class="mb-3">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">方案名称</label>
+                        <input id="review-name" class="input" value="2026年夏季品牌推广" placeholder="输入方案名称">
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">总预算（元）</label>
+                        <input id="review-budget" type="number" class="input" value="500000">
+                    </div>
+                    <div class="mb-4">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">选择线路（多选）</label>
+                        <div id="review-routes" class="space-y-2 max-h-48 overflow-y-auto">
+                            <!-- 动态加载 -->
+                        </div>
+                    </div>
+                    <button onclick="doReview()" class="btn btn-primary w-full">🚀 提交 AI审核</button>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">审核结果</h3>
+                    <div id="review-result">
+                        <div class="text-center text-gray-400 py-8">提交方案后展示审核结果</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-400">
+            bus-pDOOH 演示系统 · AIAdPlacer CPS 2.0 子系统 · 数据来源：腾讯地图 API + 人工加权
+        </div>
+    </footer>
+
+    <script>
+    // ═══════════════════════════════════════════════════
+    // Mock 数据
+    // ═══════════════════════════════════════════════════
+
+    const MOCK_ROUTES = {
+        "深圳": [
+            { code: "B601", name: "深圳巴士集团-环线1号", level: "S", vehicles: 20, monthly: 18000, heat: 92, traffic: 8500, hotspot: 2.8, pois: ["科技园", "购物中心", "写字楼"] },
+            { code: "B602", name: "深圳巴士集团-深南大道线", level: "A++", vehicles: 15, monthly: 15000, heat: 88, traffic: 7200, hotspot: 2.5, pois: ["华强北", "东门步行街", "地铁站"] },
+            { code: "B603", name: "深圳巴士集团-滨海大道线", level: "A++", vehicles: 12, monthly: 12000, heat: 78, traffic: 5500, hotspot: 2.2, pois: ["后海", "深圳湾", "写字楼"] },
+            { code: "B604", name: "深圳巴士集团-观光线", level: "A+", vehicles: 10, monthly: 9800, heat: 72, traffic: 4800, hotspot: 1.8, pois: ["景点", "商业区"] },
+            { code: "B605", name: "深圳巴士集团-龙岗线", level: "A", vehicles: 8, monthly: 6500, heat: 45, traffic: 3200, hotspot: 1.3, pois: ["住宅区", "学校"] },
+            { code: "B606", name: "深圳巴士集团-宝安线", level: "A", vehicles: 6, monthly: 5800, heat: 38, traffic: 2800, hotspot: 1.2, pois: ["工业区"] },
+        ],
+        "广州": [
+            { code: "GZ-B01", name: "广州巴士-天河线", level: "S", vehicles: 25, monthly: 20000, heat: 95, traffic: 12000, hotspot: 3.0, pois: ["太古汇", "体育西路", "CBD"] },
+            { code: "GZ-B02", name: "广州巴士-北京路线", level: "A++", vehicles: 18, monthly: 16000, heat: 90, traffic: 9500, hotspot: 2.7, pois: ["北京路步行街", "海珠广场"] },
+            { code: "GZ-B03", name: "广州巴士-海珠线", level: "A+", vehicles: 12, monthly: 10000, heat: 70, traffic: 5000, hotspot: 1.9, pois: ["江南西", "客村"] },
+            { code: "GZ-B04", name: "广州巴士-白云线", level: "A", vehicles: 8, monthly: 6000, heat: 42, traffic: 3000, hotspot: 1.3, pois: ["机场", "住宅区"] },
+        ],
+        "北京": [
+            { code: "BJ-B01", name: "北京公交-长安街线", level: "S", vehicles: 30, monthly: 22000, heat: 98, traffic: 15000, hotspot: 3.0, pois: ["王府井", "国贸", "金融中心"] },
+            { code: "BJ-B02", name: "北京公交-中关村线", level: "A++", vehicles: 20, monthly: 17000, heat: 85, traffic: 8000, hotspot: 2.4, pois: ["中关村", "写字楼", "高校"] },
+        ],
+        "上海": [
+            { code: "SH-B01", name: "上海巴士-南京东路线", level: "S", vehicles: 28, monthly: 21000, heat: 96, traffic: 14000, hotspot: 3.0, pois: ["南京路", "外滩", "陆家嘴"] },
+            { code: "SH-B02", name: "上海巴士-淮海中路线", level: "A++", vehicles: 16, monthly: 15000, heat: 82, traffic: 7000, hotspot: 2.3, pois: ["淮海路", "新天地"] },
+        ],
+        "成都": [
+            { code: "CD-B01", name: "成都公交-春熙路线", level: "S", vehicles: 15, monthly: 12000, heat: 88, traffic: 9000, hotspot: 2.6, pois: ["春熙路", "太古里", "步行街"] },
+            { code: "CD-B02", name: "成都公交-高新线", level: "A++", vehicles: 12, monthly: 9000, heat: 75, traffic: 5500, hotspot: 2.0, pois: ["软件园", "写字楼"] },
+        ],
+    };
+
+    const LEVEL_MAP = { "S": "badge-S", "A++": "badge-A-plus-plus", "A+": "badge-A-plus", "A": "badge-A" };
+    const LEVEL_MULT = { "S": 1.5, "A++": 1.3, "A+": 1.1, "A": 1.0 };
+    const TIME_MULT = { "morning_rush": 1.3, "evening_rush": 1.2, "normal": 1.0 };
+
+    // ═══════════════════════════════════════════════════
+    // Tab 切换
+    // ═══════════════════════════════════════════════════
+
+    function switchTab(tab) {
+        ['map', 'recommend', 'bidding', 'review'].forEach(t => {
+            document.getElementById('panel-' + t).classList.add('hidden');
+            const btn = document.getElementById('tab-' + t);
+            btn.classList.remove('tab-active');
+            btn.classList.add('text-gray-500');
+        });
+        document.getElementById('panel-' + tab).classList.remove('hidden');
+        const btn = document.getElementById('tab-' + tab);
+        btn.classList.add('tab-active');
+        btn.classList.remove('text-gray-500');
+
+        if (tab === 'map') renderMap();
+        if (tab === 'bidding') { loadBidRoutes(); updateBidPreview(); }
+        if (tab === 'review') loadReviewRoutes();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Tab 1: 热力地图
+    // ═══════════════════════════════════════════════════
+
+    function renderMap() {
+        const city = document.getElementById('map-city').value;
+        const routes = MOCK_ROUTES[city] || [];
+        const container = document.getElementById('route-list');
+
+        container.innerHTML = routes.map(r => {
+            const heatClass = r.heat >= 80 ? 'heat-high' : r.heat >= 50 ? 'heat-mid' : 'heat-low';
+            const badgeClass = LEVEL_MAP[r.level] || 'badge-A';
+            const impressions = Math.round(r.vehicles * r.traffic * r.hotspot_traffic * 30);
+            return `
+            <div class="card p-4 ${heatClass}">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold">${r.name}</span>
+                            <span class="badge ${badgeClass}">${r.level}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${r.code} · ${r.vehicles}台 · ¥${r.monthly.toLocaleString()}/月</div>
+                        <div class="text-xs text-gray-500 mt-1">📍 ${r.pois.join(' · ')}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold">${r.heat}</div>
+                        <div class="text-xs text-gray-500">热力评分</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-3 text-xs text-gray-600">
+                    <div>日均客流 <strong>${r.traffic.toLocaleString()}</strong></div>
+                    <div>热点系数 <strong>${r.hotspot}</strong></div>
+                    <div>30天覆盖 <strong>${(impressions/10000).toFixed(1)}万</strong></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Tab 2: 智能推荐
+    // ═══════════════════════════════════════════════════
+
+    function doRecommend() {
+        const city = document.getElementById('rec-city').value;
+        const budget = parseFloat(document.getElementById('rec-budget').value);
+        const days = parseInt(document.getElementById('rec-days').value);
+        const routes = MOCK_ROUTES[city] || [];
+        const container = document.getElementById('rec-results');
+
+        const recs = routes.filter(r => {
+            const price = (r.monthly / 30) * days * LEVEL_MULT[r.level];
+            return price <= budget;
+        }).map(r => {
+            const price = (r.monthly / 30) * days * LEVEL_MULT[r.level];
+            const impressions = Math.round(r.vehicles * r.traffic * r.hotspot_traffic * days);
+            const ratio = price / budget;
+            const score = (r.heat / 100) * 0.6 + (1 - Math.abs(ratio - 0.3)) * 0.4;
+            return { ...r, price, impressions, score: score.toFixed(3), ratio };
+        }).sort((a, b) => b.score - a.score).slice(0, 6);
+
+        if (recs.length === 0) {
+            container.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-12">暂无匹配线路，请调整预算</div>';
+            return;
+        }
+
+        container.innerHTML = recs.map((r, i) => `
+            <div class="card p-5 fade-in" style="animation-delay:${i*0.05}s">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg font-bold">#${i+1}</span>
+                        <span class="badge ${LEVEL_MAP[r.level]}">${r.level}</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500">推荐分 ${r.score}</span>
+                </div>
+                <div class="font-semibold">${r.name}</div>
+                <div class="text-sm text-gray-500 mt-1">${r.code} · ${r.vehicles}台</div>
+                <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+                    <div>总价 <strong class="text-green-600">¥${r.price.toLocaleString(undefined, {maximumFractionDigits:0})}</strong></div>
+                    <div>展示量 <strong>${(r.impressions/10000).toFixed(1)}万</strong></div>
+                    <div>30天覆盖 <strong>${(r.vehicles*r.traffic*r.hotspot_traffic*30/10000).toFixed(1)}万</strong></div>
+                    <div>预算占比 <strong>${(r.ratio*100).toFixed(1)}%</strong></div>
+                </div>
+                <div class="mt-3">
+                    <div class="progress-bar"><div class="progress-fill bg-green-500" style="width:${r.heat}%"></div></div>
+                    <div class="text-xs text-gray-400 mt-1">热力评分 ${r.heat}/100 · ${r.pois.join(' · ')}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Tab 3: 竞价计算器
+    // ═══════════════════════════════════════════════════
+
+    function loadBidRoutes() {
+        const city = document.getElementById('bid-city').value;
+        const routes = MOCK_ROUTES[city] || [];
+        const select = document.getElementById('bid-route');
+        select.innerHTML = routes.map(r => `<option value="${r.code}">${r.code} ${r.name} (${r.level} · ¥${r.monthly}/月)</option>`).join('');
+    }
+
+    function updateBidPreview() {
+        const city = document.getElementById('bid-city').value;
+        const code = document.getElementById('bid-route').value;
+        const days = parseInt(document.getElementById('bid-days').value) || 30;
+        const vehicles = parseInt(document.getElementById('bid-vehicles').value) || 1;
+        const timePeriod = document.getElementById('bid-time').value;
+        const routes = MOCK_ROUTES[city] || [];
+        const r = routes.find(x => x.code === code);
+
+        if (!r) { document.getElementById('bid-result').innerHTML = '<div class="text-center text-gray-400 py-8">请选择线路</div>'; return; }
+
+        const levelMult = LEVEL_MULT[r.level];
+        const timeMult = TIME_MULT[timePeriod];
+        const basePrice = (r.monthly / 30) * days * levelMult * timeMult;
+        const impressions = vehicles * r.traffic * r.hotspot_traffic * days;
+        const coverage30d = vehicles * r.traffic * r.hotspot_traffic * 30;
+        const cpi = basePrice / impressions;
+        const cpr = basePrice / coverage30d;
+
+        document.getElementById('bid-result').innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-green-50 rounded-xl p-4 text-center">
+                    <div class="text-sm text-gray-500">线路总价</div>
+                    <div class="text-3xl font-bold text-green-700 mt-1">¥${basePrice.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="text-xs text-gray-500">展示量</div>
+                        <div class="text-lg font-bold">${impressions.toLocaleString()}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="text-xs text-gray-500">30天覆盖</div>
+                        <div class="text-lg font-bold">${(coverage30d/10000).toFixed(1)}万</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="text-xs text-gray-500">单次展示成本</div>
+                        <div class="text-lg font-bold">¥${cpi.toFixed(3)}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="text-xs text-gray-500">单次覆盖成本</div>
+                        <div class="text-lg font-bold">¥${cpr.toFixed(3)}</div>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-400 space-y-1">
+                    <div>📐 基础价格 = ¥${r.monthly.toLocaleString()} ÷ 30 × ${days}天 × ${levelMult}(等级) × ${timeMult}(时段)</div>
+                    <div>📐 展示量 = ${vehicles}台 × ${r.traffic.toLocaleString()}客流 × ${r.hotspot}热点 × ${days}天</div>
+                </div>
+            </div>`;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Tab 4: AI审核
+    // ═══════════════════════════════════════════════════
+
+    function loadReviewRoutes() {
+        const container = document.getElementById('review-routes');
+        const routes = MOCK_ROUTES['深圳'] || [];
+        container.innerHTML = routes.map(r => `
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" value="${r.code}" class="accent-green-600">
+                <span class="badge ${LEVEL_MAP[r.level]} text-xs">${r.level}</span>
+                <span class="text-sm">${r.code} ${r.name}</span>
+                <span class="text-xs text-gray-400 ml-auto">¥${r.monthly}/月 热力${r.heat}</span>
+            </label>
+        `).join('');
+    }
+
+    function doReview() {
+        const name = document.getElementById('review-name').value;
+        const budget = parseFloat(document.getElementById('review-budget').value);
+        const checkboxes = document.querySelectorAll('#review-routes input:checked');
+        const selectedCodes = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedCodes.length === 0) {
+            document.getElementById('review-result').innerHTML = '<div class="text-center text-red-400 py-8">⚠️ 请至少选择一条线路</div>';
+            return;
+        }
+
+        const routes = MOCK_ROUTES['深圳'] || [];
+        const selectedRoutes = routes.filter(r => selectedCodes.includes(r.code));
+
+        // 模拟审核过程
+        document.getElementById('review-result').innerHTML = `
+            <div class="text-center py-8">
+                <div class="loading mx-auto"></div>
+                <div class="text-sm text-gray-500 mt-3">AI 正在审核方案...</div>
+            </div>`;
+
+        // 模拟延迟
+        setTimeout(() => {
+            const totalPrice = selectedRoutes.reduce((sum, r) => sum + (r.monthly / 30) * 30 * LEVEL_MULT[r.level], 0);
+            const totalImpressions = selectedRoutes.reduce((sum, r) => sum + r.vehicles * r.traffic * r.hotspot_traffic * 30, 0);
+            const avgHeat = selectedRoutes.reduce((sum, r) => sum + r.heat, 0) / selectedRoutes.length;
+            const budgetRatio = totalPrice / budget;
+            const passed = totalPrice <= budget && avgHeat > 40;
+            const score = passed ? Math.round(60 + avgHeat * 0.3 + (1 - Math.abs(budgetRatio - 0.7)) * 20) : Math.max(20, Math.round(100 - (budgetRatio > 1 ? 30 : 0) - (avgHeat < 40 ? 20 : 0)));
+
+            document.getElementById('review-result').innerHTML = `
+                <div class="space-y-4">
+                    <div class="${passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'} rounded-xl p-4 text-center">
+                        <div class="text-4xl">${passed ? '✅' : '❌'}</div>
+                        <div class="text-xl font-bold ${passed ? 'text-green-700' : 'text-red-700'} mt-2">${passed ? '审核通过' : '审核不通过'}</div>
+                        <div class="text-sm text-gray-500">综合评分：${score}/100</div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between py-2 border-b"><span>品牌与线路匹配度</span><span class="font-semibold text-green-600">✅ 高（${Math.round(avgHeat)}% 重合）</span></div>
+                        <div class="flex justify-between py-2 border-b"><span>预算合理性</span><span class="font-semibold ${budgetRatio <= 1 ? 'text-green-600' : 'text-red-600'}">${budgetRatio <= 1 ? '✅ 合理' : '❌ 超出预算'}</span></div>
+                        <div class="flex justify-between py-2 border-b"><span>热力评分</span><span class="font-semibold ${avgHeat >= 50 ? 'text-green-600' : 'text-yellow-600'}">${avgHeat >= 50 ? '✅' : '⚠️'} 平均 ${avgHeat.toFixed(1)}</span></div>
+                        <div class="flex justify-between py-2 border-b"><span>预估展示量</span><span class="font-semibold">${(totalImpressions/10000).toFixed(1)}万</span></div>
+                        <div class="flex justify-between py-2"><span>线路总价</span><span class="font-semibold">¥${totalPrice.toLocaleString(undefined, {maximumFractionDigits:0})}</span></div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <div class="text-sm font-medium text-blue-800">💡 AI 建议</div>
+                        <ul class="text-sm text-blue-700 mt-1 space-y-1">
+                            ${budgetRatio < 0.5 ? '<li>预算使用率较低，可考虑增加线路提升覆盖</li>' : ''}
+                            ${avgHeat < 60 ? '<li>建议优先选择热力评分 > 60 的线路</li>' : ''}
+                            ${selectedRoutes.every(r => r.level === 'A' || r.level === 'A+') ? '<li>可考虑加入 S/A++ 等级线路提升品牌曝光</li>' : ''}
+                            <li>建议增加早高峰(7-9点)投放时段以最大化触达</li>
+                        </ul>
+                    </div>
+                </div>`;
+        }, 1500);
+    }
+
+    // 初始化
+    renderMap();
+    </script>
+</body>
+</html>
