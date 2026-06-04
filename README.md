@@ -258,18 +258,55 @@ AIAdPlacer/
 
 ## 🌟 核心创新点
 
-### 1. 人为锚点（Person Anchor）
+### 1. OneID — 跨平台唯一受众 ID ⭐ 新增
 
-以 `TAID` 为唯一标识，绑定 `OAID / MAC / 人脸特征 Hash`，实现跨屏、跨设备、跨时间的唯一用户识别。
+以**手机客户信息**为基础，通过 **AI 算法模型**（设备指纹 + AI 匹配）为每个受众生成唯一 ID：
 
-```sql
--- 可信 ID 绑定表示例
-SELECT taid, oaid, mac_hash, face_feature_hash
-FROM trusted_id_binding
-WHERE taid = 'TA-2024-00001';
+```
+手机客户信息 → AI 匹配算法 → OneID（跨 App 打通）
 ```
 
-### 2. A2A 接口（AI-to-AI）
+**核心价值**：
+- 跨 App 平台打通，针对每个 ID 的**二次运营**
+- 基于 OneID **实时行为数据**，AI 优化算法**动态调整投放策略**
+- 实现从"投屏"到"投人"的范式转变
+
+```sql
+-- OneID 示例
+SELECT oneid, device_fingerprint, app_ids, last_active, behavior_tags
+FROM oneid_registry
+WHERE oneid = 'OI-2024-00001';
+```
+
+### 2. 一页式投放漏斗（Funnel-on-Grid）
+
+**500 米网格**为单位，将投放全流程浓缩为一张热力图：
+
+```
+选点（POI交叉比对） → 出价（OTC模型） → 投放（AI优化） → 归因（OneID追踪）
+```
+
+**网格热力系统**：
+- **粒度**：500 米 × 500 米雷利网格（Rayleigh Grid）
+- **POI 交叉比对**：高德地图 + 腾讯地图双平台验证
+- **热力评分**：综合人口密度、消费力、POI 丰富度、竞品分布
+
+### 3. OTC 模型（Opportunity To Contact）
+
+```
+OTC = PV × Reach × Frequency × 有效接触系数
+```
+
+**约束**：PV 数据作为**上限约束**，Reach & Frequency 不能超过 PV
+
+| 参数 | 说明 | 来源 |
+|------|------|------|
+| PV | 页面浏览量（上限） | 腾讯地图/高德地图 API |
+| Reach | 触达人数 | OneID 去重统计 |
+| Frequency | 触达频次 | 500米网格曝光计数 |
+| 有效接触系数 | 广告有效触达比例 | AI 模型估算（0.3-0.8） |
+
+### 4. A2A 接口（AI-to-AI）
 
 其他 AI Agent 可通过标准 MCP 协议直接调用投放能力：
 
@@ -282,7 +319,7 @@ result = mcp_call(
 )
 ```
 
-### 3. 合规优先设计
+### 5. 合规优先设计
 
 - AI 生成内容自动标注 `human_visible=false`
 - 人脸/MAC 数据全部 Hash 化，不存储原始值
