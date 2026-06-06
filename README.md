@@ -31,6 +31,9 @@ AIAdPlacer 填补了这个空白：
 - ✅ **A2A 接口**（AI-to-AI），其他 AI Agent 可直接调用投放能力
 - ✅ 对接**腾讯地图 LBS** + **青柠科技**社区数据底座
 - ✅ 内置 **LLM Agent 编排**（人群洞察 → 智能排期 → 动态创意 → 效果归因）
+- ✅ **符合 T/CCSA 738—2025 行业标准**（程序化户外广告投放曝光测量技术要求）
+
+> 📋 **行业标准对齐**：系统曝光测量逻辑已对标中国广告协会 + 中国通信标准化协会联合发布的行业标准，涵盖流动曝光、驻留曝光、曝光乘数、OTC 概率等核心指标。详见 [`docs/industry_standard_terms_and_guide.md`](docs/industry_standard_terms_and_guide.md)
 
 ---
 
@@ -237,6 +240,7 @@ AIAdPlacer/
 │   ├── bus-pdooh-prd.md       # ⭐ bus-pDOOH 产品需求文档
 │   ├── bus-pdooh-system-design.md # ⭐ bus-pDOOH 系统设计
 │   ├── pdoh_whitepaper_v2.md  # 项目白皮书（含青柠5V论证）
+│   ├── industry_standard_terms_and_guide.md # ⭐ 行业标准术语表+应用指南（T/CCSA 738-2025）
 │   └── github_upload_guide.md # GitHub 上传指南
 └── README.md
 ```
@@ -346,9 +350,12 @@ result = mcp_call(
 - [x] A2A MCP Server 接口
 - [x] 青柠科技 5V 数据模型论证白皮书
 - [x] **⭐ bus-pDOOH 子系统**完整实现（线路管理/竞价引擎/AI审核/效果归因/演示页）
+- [x] **⭐ 行业标准对齐**（T/CCSA 738-2025 曝光测量术语表+应用指南）
+- [ ] v2.1 行业标准曝光计算引擎（流动/驻留曝光 + SOT + 曝光乘数 + 接触频次）
 - [ ] v2.1 接入真实青柠科技数据（广州试点）
 - [ ] v2.2 数字联盟可信 ID SDK 集成
-- [ ] v3.0 多城市扩展（深圳/佛山/东莞）
+- [ ] v2.3 迪杰斯特拉路径优化 + 运营商数据接入
+- [ ] v3.0 多城市扩展（深圳/佛山/东莞）+ 地铁/机场场域模型
 
 ---
 
