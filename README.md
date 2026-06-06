@@ -323,6 +323,89 @@ result = mcp_call(
 - [ ] v2.2 数字联盟可信 ID SDK 集成
 - [ ] v3.0 多城市扩展（深圳/佛山/东莞）
 
+AI pDOOH 服务配置完成
+
+🌐 服务信息
+项目
+值
+地址
+`http://47.253.159.62:8899`
+协议
+REST + MCP
+权限
+只读
+API Key
+`pdooh-agent-key-2026`
+状态
+✅ 运行中
+
+📁 创建的文件
+文件
+用途
+`skills/ai-pdooh/SKILL.md`
+Agent调用接口文档
+`start_pdooh.sh`
+服务管理脚本
+`AIAdPlacer/app/api/main.py`
+API服务器
+`AIAdPlacer/app/core/brain.py`
+核心逻辑（已更新）
+
+🎮 管理命令
+**启动服务**
+/home/admin/.copaw/workspaces/default/start_pdooh.sh start
+
+**停止服务**
+/home/admin/.copaw/workspaces/default/start_pdooh.sh stop
+
+**查看状态**
+/home/admin/.copaw/workspaces/default/start_pdooh.sh status
+
+**重启服务**
+/home/admin/.copaw/workspaces/default/start_pdooh.sh restart
+
+🔌 API端点
+端点
+方法
+功能
+`/health`
+GET
+健康检查
+`/v1/quote`
+POST
+智能定价
+`/v1/search`
+POST
+品牌查询
+`/v1/recommend`
+POST
+媒体推荐
+`/v1/competitor`
+POST
+竞品分析
+`/v1/campaign`
+POST
+方案生成
+`/v1/mcp-tools`
+GET
+MCP工具列表
+
+🧪 测试命令
+**健康检查**
+curl http://47.253.159.62:8899/health
+
+**品牌查询**
+curl -X POST http://47.253.159.62:8899/v1/search \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pdooh-agent-key-2026" \
+  -d '{"brand":"农夫山泉"}'
+
+**智能定价**
+curl -X POST http://47.253.159.62:8899/v1/quote \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pdooh-agent-key-2026" \
+  -d '{"brand":"元气森林","media":"广告门","city":"广州"}'
+
 ---
 
 ## 📞 联系 & 关注
