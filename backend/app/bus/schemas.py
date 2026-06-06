@@ -24,6 +24,14 @@ class BusRouteCreate(BaseModel):
     display_formula: Optional[str] = Field(None, description="展示公式")
     pois: Optional[List[Dict[str, Any]]] = Field(default=None, description="POI数据")
 
+    # ── 行业标准曝光测量字段 (T/CCSA 738-2025) ──
+    exposure_duration: float = Field(default=15.0, ge=0, description="平均曝光时长 T_exposure（秒）")
+    ad_duration: float = Field(default=15.0, ge=0, description="单广告片时长 T_ad（秒）")
+    sot: float = Field(default=0.25, ge=0, le=1.0, description="时间占比 Share of Time")
+    ad_slots_per_cycle: int = Field(default=4, ge=1, description="轮播周期内广告数量")
+    flow_otc: float = Field(default=0.5, ge=0, le=1.0, description="流动曝光概率")
+    dwell_otc: float = Field(default=0.05, ge=0, le=1.0, description="驻留曝光概率")
+
 
 class BusRouteUpdate(BaseModel):
     """线路更新（全部可选）"""
@@ -38,6 +46,14 @@ class BusRouteUpdate(BaseModel):
     display_formula: Optional[str] = None
     pois: Optional[List[Dict[str, Any]]] = None
     status: Optional[str] = None
+
+    # ── 行业标准曝光测量字段 ──
+    exposure_duration: Optional[float] = None
+    ad_duration: Optional[float] = None
+    sot: Optional[float] = None
+    ad_slots_per_cycle: Optional[int] = None
+    flow_otc: Optional[float] = None
+    dwell_otc: Optional[float] = None
 
 
 class BusRouteOut(BaseModel):
@@ -55,6 +71,12 @@ class BusRouteOut(BaseModel):
     display_formula: Optional[str] = None
     pois: Optional[List[Dict[str, Any]]] = None
     status: str
+    exposure_duration: float = 15.0
+    ad_duration: float = 15.0
+    sot: float = 0.25
+    ad_slots_per_cycle: int = 4
+    flow_otc: float = 0.5
+    dwell_otc: float = 0.05
     created_at: datetime
     updated_at: datetime
 
@@ -128,6 +150,8 @@ class CampaignRouteOut(BaseModel):
     route_budget: float
     actual_days: int
     estimated_impressions: int
+    flow_impressions: int = 0
+    dwell_impressions: int = 0
     route_info: Optional[BusRouteOut] = None
 
     class Config:
@@ -189,6 +213,14 @@ class AttributionOut(BaseModel):
     cost_per_reach: float
     detailed_data: Dict[str, Any]
     created_at: datetime
+
+    # ── 行业标准曝光测量字段 (T/CCSA 738-2025) ──
+    flow_impressions: int = 0
+    dwell_impressions: int = 0
+    effective_impressions: int = 0
+    impression_multiplier: float = 1.0
+    frequency: float = 0.0
+    independent_audience: int = 0
 
     class Config:
         from_attributes = True

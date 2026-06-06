@@ -3,12 +3,16 @@ bus-pDOOH 子系统 — 公交线路广告竞价引擎
 
 核心竞价逻辑：
 - 基础价格 = 月单价 / 30 × 投放天数 × 等级系数 × 时段溢价
-- 展示量 = 车辆数 × 日均客流 × 热点系数 × 投放天数
-- 覆盖人群 = 车辆数 × 日均客流 × 热点系数 × 30
+- 展示量 = 行业标准曝光计算（T/CCSA 738-2025）
+  · 流动曝光（公式1）+ 驻留曝光（公式3）= 总曝光（公式5）
+  · 曝光乘数（公式6）+ 接触频次
+
+兼容旧版简单公式：impressions = vehicles × daily_traffic × hotspot_traffic × days
 """
 from decimal import Decimal
 from typing import Dict, Any, List, Optional
 from app.bus.models import RouteLevel
+from app.bus.services.standard_impression import calc_standard_impression
 
 
 # ── 竞价参数常量 ───────────────────────────────────────────
@@ -75,6 +79,19 @@ def calculate_bidding(
     # 覆盖人群（30天）= 车辆数 × 日均客流 × 热点系数 × 30
     coverage_30d = int(vehicles * daily_traffic * hotspot_traffic * 30)
 
+    # ── 行业标准曝光测量 (T/CCSA 738-2025) ──
+    # 使用标准引擎计算流动/驻留曝光、曝光乘数、接触频次
+    standard_result = calc_standard_impression(
+        vehicles=vehicles,
+        daily_traffic=daily_traffic,
+        hotspot_traffic=hotspot_traffic,
+        days=days,
+        exposure_duration=15.0,  # 默认 15 秒曝光时长
+        ad_duration=15.0,        # 默认 15 秒广告时长
+        sot=0.25,                # 默认时间占比 25%（4 个广告轮播）
+        ad_slots=4,              # 默认 4 个广告轮播
+    )
+
     # 单次展示成本
     cost_per_impression = round(Decimal(str(base_price)) / Decimal(str(impressions)), 4) if impressions > 0 else Decimal("0")
 
@@ -89,6 +106,21 @@ def calculate_bidding(
         "cost_per_reach": float(cost_per_reach),
         "level_multiplier": level_mult,
         "time_premium": time_premium,
+
+        # ── 行业标准指标 ──
+        "standard_impression": {
+            "flow_impressions": standard_result.flow_impressions,
+            "dwell_impressions": standard_result.dwell_impressions,
+            "total_impressions": standard_result.total_impressions,
+            "effective_impressions": standard_result.effective_impressions,
+            "flow_otc": standard_result.flow_otc,
+            "dwell_otc": standard_result.dwell_otc,
+            "impression_multiplier": standard_result.impression_multiplier,
+            "frequency": standard_result.frequency,
+            "independent_audience": standard_result.independent_audience,
+            "reach": standard_result.reach,
+        },
+
         "details": {
             "monthly_price": float(monthly_price),
             "level": level,
