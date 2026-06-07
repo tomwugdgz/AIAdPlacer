@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 优化模块 — AIAdPlacer v2.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+      background: #0a0f1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 1px solid #1e3a5f;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 22px;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header .version {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 14px 24px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: #94a3b8;
+      font-size: 14px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab:hover { color: #e2e8f0; background: #1e293b20; }
+    .tab.active {
+      color: #60a5fa;
+      border-bottom-color: #60a5fa;
+      background: #1e293b40;
+    }
+    .content { padding: 24px 32px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* 卡片 */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h3 {
+      font-size: 16px;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h3 .icon { font-size: 20px; }
+
+    /* 网格 */
+    .grid { display: grid; gap: 20px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    /* 指标卡片 */
+    .metric-card {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .metric-card .label { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+    .metric-card .value { font-size: 28px; font-weight: 700; }
+    .metric-card .value.blue { color: #60a5fa; }
+    .metric-card .value.purple { color: #a78bfa; }
+    .metric-card .value.green { color: #34d399; }
+    .metric-card .value.orange { color: #fb923c; }
+
+    /* 表单 */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #60a5fa;
+    }
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+    /* 表格 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: #0f172a;
+      color: #94a3b8;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #334155;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+    tr:hover td { background: #1e293b40; }
+
+    /* 进度条 */
+    .progress-bar {
+      height: 6px;
+      background: #334155;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .progress-fill.blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .progress-fill.purple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .progress-fill.green { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    /* 漏斗 */
+    .funnel { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; }
+    .funnel-step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .funnel-step:hover { transform: scale(1.05); }
+
+    .chart-container {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 16px;
+      height: 300px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid #334155;
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-blue { background: #3b82f620; color: #60a5fa; }
+    .badge-green { background: #10b98120; color: #34d399; }
+    .badge-purple { background: #8b5cf620; color: #a78bfa; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #334155;
+      border-radius: 4px;
+      font-size: 11px;
+      margin: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🚀 AI 优化模块</h1>
+      <div class="version">AIAdPlacer v2.0 — AI排期优化 · 竞品监控 · 效果归因</div>
+    </div>
+    <div style="font-size:12px;color:#64748b">API: http://127.0.0.1:5002</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('scheduling')">📅 AI 排期优化</button>
+    <button class="tab" onclick="switchTab('competitor')">🔍 竞品监控</button>
+    <button class="tab" onclick="switchTab('dashboard')">📈 效果归因看板</button>
+  </div>
+
+  <div class="content">
+    <!-- ===== AI 排期优化 ===== -->
+    <div id="panel-scheduling" class="panel active">
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="label">总预算</div>
+          <div class="value blue" id="sched-budget">¥50,000</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">投放天数</div>
+          <div class="value purple" id="sched-days">14 天</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">预期曝光</div>
+          <div class="value green" id="sched-impressions">-</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">平均 CPM</div>
+          <div class="value orange" id="sched-cpm">-</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <h3><span class="icon">⚙️</span> 排期参数配置</h3>
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label>总预算 (¥)</label>
+              <input type="number" id="budget-input" value="50000">
+            </div>
+            <div class="form-group">
+              <label>投放天数</label>
+              <input type="number" id="days-input" value="14">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>指定媒体 (可选，逗号分隔 ID)</label>
+            <input type="text" id="media-input" placeholder="留空自动筛选最佳媒体">
+          </div>
+          <button class="btn btn-primary" onclick="generateSchedule()">🤖 AI 生成排期</button>
+        </div>
+
+        <div class="card">
+          <h3><span class="icon">📊</span> 排期方案 (前7天)</h3>
+          <div id="schedule-result" class="loading">
+            <div class="spinner"></div>
+            点击 "AI 生成排期" 开始优化
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3><span class="icon">📅</span> 每日排期详情</h3>
+        <div style="overflow-x: auto;">
+          <table id="schedule-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>媒体</th>
+                <th>类型</th>
+                <th>费用</th>
+                <th>预期曝光</th>
+                <th>CPM</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-tbody">
+              <tr><td colspan="6" style="text-align:center;color:#64748b">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 竞品监控 ===== -->
+    <div id="panel-competitor" class="panel">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3><span class="icon">🔍</span> 竞品分析配置</h3>
+          <div class="form-group">
+            <label>竞品名称</label>
+            <input type="text" id="comp-name" value="竞对A">
+          </div>
+          <div class="form-group">
+            <label>品牌 (可选)</label>
+            <input type="text" id="comp-brand" placeholder="品牌名称">
+          </div>
+          <div class="form-group">
+            <label>行业</label>
+            <select id="comp-industry">
+              <option value="f&b">餐饮</option>
+              <option value="retail">零售</option>
+              <option value="tech">科技</option>
+              <option value="finance">金融</option>
+              <option value="automotive">汽车</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>监控天数</label>
+            <input type="number" id="comp-days" value="30">
+          </div>
+          <button class="btn btn-primary" onclick="generateReport()">🔎 生成竞品报告</button>
+        </div>
+
+        <div class="card">
+          <h3><span class="icon">📋</span> 竞品对比</h3>
+          <div class="form-group">
+            <label>竞品名称列表 (逗号分隔)</label>
+            <input type="text" id="comp-names" value="竞对A,竞对B,竞对C">
+          </div>
+          <button class="btn btn-primary" onclick="compareCompetitors()">📊 对比分析</button>
+          <div id="compare-result" style="margin-top: 16px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px;" id="comp-report-card" hidden>
+        <h3><span class="icon">📈</span> 竞品报告详情</h3>
+        <div id="comp-report-content"></div>
+      </div>
+    </div>
+
+    <!-- ===== 效果归因看板 ===== -->
+    <div id="panel-dashboard" class="panel">
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="label">总曝光</div>
+          <div class="value blue" id="dash-imp">-</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">总点击</div>
+          <div class="value purple" id="dash-clk">-</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">总转化</div>
+          <div class="value green" id="dash-conv">-</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">总花费</div>
+          <div class="value orange" id="dash-cost">-</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <h3><span class="icon">📉</span> 关键指标</h3>
+          <div class="grid grid-2" style="gap: 12px;">
+            <div style="padding: 12px; background: #0f172a; border-radius: 8px;">
+              <div style="font-size:12px;color:#94a3b8;">CTR</div>
+              <div style="font-size:20px;font-weight:700;color:#60a5fa;" id="dash-ctr">-</div>
+            </div>
+            <div style="padding: 12px; background: #0f172a; border-radius: 8px;">
+              <div style="font-size:12px;color:#94a3b8;">CVR</div>
+              <div style="font-size:20px;font-weight:700;color:#a78bfa;" id="dash-cvr">-</div>
+            </div>
+            <div style="padding: 12px; background: #0f172a; border-radius: 8px;">
+              <div style="font-size:12px;color:#94a3b8;">CPA</div>
+              <div style="font-size:20px;font-weight:700;color:#34d399;" id="dash-cpa">-</div>
+            </div>
+            <div style="padding: 12px; background: #0f172a; border-radius: 8px;">
+              <div style="font-size:12px;color:#94a3b8;">ROI</div>
+              <div style="font-size:20px;font-weight:700;color:#fb923c;" id="dash-roi">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><span class="icon">🔻</span> 转化漏斗</h3>
+          <div class="funnel" id="funnel-chart"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <h3><span class="icon">📊</span> 时间线表现</h3>
+          <div class="chart-container">
+            <canvas id="timeline-chart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3><span class="icon">🏆</span> 媒体表现排行</h3>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>媒体</th>
+                  <th>类型</th>
+                  <th>曝光</th>
+                  <th>转化</th>
+                  <th>CPA</th>
+                  <th>效果</th>
+                </tr>
+              </thead>
+              <tbody id="media-tbody">
+                <tr><td colspan="6" style="text-align:center;color:#64748b">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; text-align: center;">
+        <button class="btn btn-primary" onclick="loadDashboard()">🔄 刷新看板数据</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://127.0.0.1:5002/api/v2';
+
+    // Tab 切换
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+    }
+
+    // ===== AI 排期优化 =====
+    async function generateSchedule() {
+      const budget = parseFloat(document.getElementById('budget-input').value) || 50000;
+      const days = parseInt(document.getElementById('days-input').value) || 14;
+      const media = document.getElementById('media-input').value;
+
+      let url = `${API}/optimization/scheduling/generate?budget=${budget}&days=${days}`;
+      if (media) url += `&media_ids=${media}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        renderSchedule(data);
+      } catch (e) {
+        document.getElementById('schedule-result').innerHTML = 
+          `<div style="color:#f87171;padding:20px;">⚠️ 请求失败: ${e.message}<br><small>请先启动后端服务: cd backend && python run.py</small></div>`;
+      }
+    }
+
+    function renderSchedule(data) {
+      const slots = data.slots || [];
+      document.getElementById('sched-budget').textContent = '¥' + (data.total_budget || 0).toLocaleString();
+      document.getElementById('sched-days').textContent = (data.days || 0) + ' 天';
+      document.getElementById('sched-impressions').textContent = (data.total_impressions || 0).toLocaleString();
+      document.getElementById('sched-cpm').textContent = '¥' + (data.avg_cpm || 0).toFixed(1);
+
+      document.getElementById('schedule-result').innerHTML = `
+        <div style="padding: 16px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+            <span style="color:#94a3b8;">总花费</span>
+            <span style="font-size:18px;font-weight:700;color:#60a5fa;">¥${(data.total_cost || 0).toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+            <span style="color:#94a3b8;">剩余预算</span>
+            <span style="font-size:18px;font-weight:700;color:#34d399;">¥${(data.remaining_budget || 0).toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#94a3b8;">排期槽位</span>
+            <span style="font-size:18px;font-weight:700;color:#a78bfa;">${slots.length} 个</span>
+          </div>
+        </div>`;
+
+      // 渲染表格
+      const tbody = document.getElementById('schedule-tbody');
+      tbody.innerHTML = '';
+      const display = slots.slice(0, 7); // 显示前7个
+      display.forEach(slot => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${slot.date}</td>
+            <td>${slot.media_name}</td>
+            <td><span class="badge badge-blue">${slot.category}</span></td>
+            <td>¥${slot.cost.toFixed(0)}</td>
+            <td>${slot.impressions.toLocaleString()}</td>
+            <td>¥${slot.cpm.toFixed(1)}</td>
+          </tr>`;
+      });
+      if (slots.length > 7) {
+        tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;color:#64748b;">... 共 ${slots.length} 个槽位，仅显示前7个</td></tr>`;
+      }
+    }
+
+    // ===== 竞品监控 =====
+    async function generateReport() {
+      const name = document.getElementById('comp-name').value || '竞对A';
+      const brand = document.getElementById('comp-brand').value;
+      const industry = document.getElementById('comp-industry').value;
+      const days = parseInt(document.getElementById('comp-days').value) || 30;
+
+      let url = `${API}/optimization/competitor/report?competitor_name=${name}&industry=${industry}&days=${days}`;
+      if (brand) url += `&brand=${brand}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        renderCompetitorReport(data);
+      } catch (e) {
+        document.getElementById('comp-report-content').innerHTML = 
+          `<div style="color:#f87171;padding:20px;">⚠️ 请求失败: ${e.message}</div>`;
+      }
+    }
+
+    function renderCompetitorReport(data) {
+      const card = document.getElementById('comp-report-card');
+      card.hidden = false;
+
+      const mediaTags = (data.media_types || []).map(t => `<span class="tag">${t}</span>`).join('');
+      const locs = (data.key_locations || []).slice(0, 5).map(l => 
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #334155;">
+          <span>${l.location}</span>
+          <span style="color:#60a5fa;font-weight:600;">${l.score}</span>
+        </div>`
+      ).join('');
+
+      document.getElementById('comp-report-content').innerHTML = `
+        <div class="grid grid-3" style="margin-bottom:20px;">
+          <div class="metric-card">
+            <div class="label">竞品</div>
+            <div class="value blue" style="font-size:20px;">${data.competitor_name}</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">估算预算</div>
+            <div class="value purple">¥${(data.estimated_budget || 0).toFixed(0)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">活跃度</div>
+            <div class="value green">${data.activity_score || 0}</div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;">使用媒体类型</div>
+          <div>${mediaTags || '<span style="color:#64748b;">无数据</span>'}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;">核心投放区域</div>
+          ${locs || '<span style="color:#64748b;">无数据</span>'}
+        </div>`;
+    }
+
+    async function compareCompetitors() {
+      const names = document.getElementById('comp-names').value;
+      if (!names) return;
+
+      try {
+        const res = await fetch(`${API}/optimization/competitor/compare?names=${names}`);
+        const data = await res.json();
+        renderComparison(data);
+      } catch (e) {
+        document.getElementById('compare-result').innerHTML = 
+          `<div style="color:#f87171;">⚠️ ${e.message}</div>`;
+      }
+    }
+
+    function renderComparison(data) {
+      const competitors = data.competitors || [];
+      let html = '<table><thead><tr><th>竞品</th><th>预算</th><th>活跃度</th><th>媒体类型</th></tr></thead><tbody>';
+      competitors.forEach((c, i) => {
+        const rank = i === 0 ? '🏆' : '';
+        html += `<tr>
+          <td>${rank} ${c.competitor_name}</td>
+          <td>¥${(c.estimated_budget || 0).toFixed(0)}</td>
+          <td>
+            <div class="progress-bar" style="width:100px;display:inline-block;vertical-align:middle;">
+              <div class="progress-fill ${c.activity_score > 70 ? 'green' : c.activity_score > 40 ? 'blue' : 'purple'}" style="width:${c.activity_score}%"></div>
+            </div>
+            <span style="margin-left:8px;font-size:12px;">${c.activity_score}</span>
+          </td>
+          <td>${(c.media_types || []).join(', ')}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('compare-result').innerHTML = html;
+    }
+
+    // ===== 效果归因看板 =====
+    let timelineChartInstance = null;
+
+    async function loadDashboard() {
+      try {
+        // 总览
+        const overview = await (await fetch(`${API}/dashboard/overview`)).json();
+        document.getElementById('dash-imp').textContent = (overview.total_impressions || 0).toLocaleString();
+        document.getElementById('dash-clk').textContent = (overview.total_clicks || 0).toLocaleString();
+        document.getElementById('dash-conv').textContent = (overview.total_conversions || 0).toLocaleString();
+        document.getElementById('dash-cost').textContent = '¥' + (overview.total_cost || 0).toFixed(0);
+        document.getElementById('dash-ctr').textContent = (overview.ctr || 0).toFixed(2) + '%';
+        document.getElementById('dash-cvr').textContent = (overview.cvr || 0).toFixed(2) + '%';
+        document.getElementById('dash-cpa').textContent = '¥' + (overview.cpa || 0).toFixed(0);
+        document.getElementById('dash-roi').textContent = (overview.roi || 0).toFixed(1) + '%';
+
+        // 漏斗
+        const funnel = await (await fetch(`${API}/dashboard/funnel`)).json();
+        renderFunnel(funnel);
+
+        // 时间线
+        const timeline = await (await fetch(`${API}/dashboard/timeline?days=14`)).json();
+        renderTimeline(timeline);
+
+        // 媒体表现
+        const perf = await (await fetch(`${API}/dashboard/media-performance`)).json();
+        renderMediaPerformance(perf);
+
+      } catch (e) {
+        console.error('看板加载失败:', e);
+      }
+    }
+
+    function renderFunnel(data) {
+      const container = document.getElementById('funnel-chart');
+      const colors = ['#3b82f6', '#8b5cf6', '#10b981'];
+      const widths = [100, 70, 40];
+      container.innerHTML = '';
+      data.forEach((step, i) => {
+        const w = widths[i] + '%';
+        container.innerHTML += `
+          <div class="funnel-step" style="width:${w};height:50px;background:${colors[i]};border-radius:6px;">
+            ${step.stage}: ${step.count.toLocaleString()} (${step.rate}%)
+          </div>`;
+      });
+    }
+
+    function renderTimeline(data) {
+      const ctx = document.getElementById('timeline-chart').getContext('2d');
+      if (timelineChartInstance) timelineChartInstance.destroy();
+
+      const labels = data.map(d => d.date.slice(5)); // MM-DD
+      timelineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '曝光',
+              data: data.map(d => d.impressions),
+              borderColor: '#3b82f6',
+              backgroundColor: '#3b82f620',
+              fill: true,
+              tension: 0.4,
+            },
+            {
+              label: '转化',
+              data: data.map(d => d.conversions),
+              borderColor: '#10b981',
+              backgroundColor: '#10b98120',
+              fill: true,
+              tension: 0.4,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8' } } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+    }
+
+    function renderMediaPerformance(data) {
+      const tbody = document.getElementById('media-tbody');
+      tbody.innerHTML = '';
+      data.slice(0, 10).forEach(m => {
+        const perf = m.cpa < 50 ? 'green' : m.cpa < 100 ? 'blue' : 'purple';
+        tbody.innerHTML += `
+          <tr>
+            <td>${m.media_name}</td>
+            <td><span class="badge badge-blue">${m.category}</span></td>
+            <td>${m.impressions.toLocaleString()}</td>
+            <td>${m.conversions}</td>
+            <td>¥${m.cpa.toFixed(0)}</td>
+            <td><span class="badge badge-${perf}">${m.conversions > 0 ? '优' : '一般'}</span></td>
+          </tr>`;
+      });
+    }
+
+    // 初始化
+    loadDashboard();
+  </script>
+</body>
+</html>

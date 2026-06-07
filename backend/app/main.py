@@ -18,6 +18,8 @@ from app.bmn.api.workflow_routes import router as bmn_workflow_router
 from app.pdooh_api import router as pdooh_router
 from app.pdooh_mcp import router as pdooh_mcp_router
 from app.bus.api import router as bus_router
+from app.api.optimization_routes import router as optimization_router
+from app.api.dashboard_routes import router as dashboard_router
 from app.config import settings
 
 app = FastAPI(
@@ -48,6 +50,10 @@ app.include_router(bmn_workflow_router)
 app.include_router(pdooh_router)
 # pDOOH A2A MCP Server（AI-to-AI 投放接口）
 app.include_router(pdooh_mcp_router)
+# AI 排期优化 + 竞品监控
+app.include_router(optimization_router, prefix="/api/v2/optimization")
+# 效果归因看板
+app.include_router(dashboard_router, prefix="/api/v2/dashboard")
 
 @app.on_event("startup")
 async def startup():
@@ -58,3 +64,6 @@ async def startup():
     print(f"🤖 Agent API: http://127.0.0.1:5002/api/v2/agents/execute")
     print(f"📚 RAG知识库: http://127.0.0.1:5002/api/v2/rag/knowledge")
     print(f"📊 pDOOH API: http://127.0.0.1:5002/api/v2/pdooh/screens")
+    print(f"📅 AI排期优化: http://127.0.0.1:5002/api/v2/optimization/scheduling/generate")
+    print(f"🔍 竞品监控: http://127.0.0.1:5002/api/v2/optimization/competitor/report")
+    print(f"📈 效果看板: http://127.0.0.1:5002/api/v2/dashboard/overview")
