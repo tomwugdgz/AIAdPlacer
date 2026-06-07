@@ -91,7 +91,41 @@ AIAdPlacer 填补了这个空白：
 > 💡 **V4 门禁数据**是青柠科技的核心壁垒——每次「开门」都是一次真实到店验证，任何其他 pDOOH 系统都不具备这个数据维度。
 
 ---
+## 🧠 AI Agents
 
+系统内置 **4 个专业 Agent**，由 LangGraph 编排协同工作：
+
+```mermaid
+graph LR
+    U[用户输入] --> IA[🔍 人群洞察 Agent]
+    IA --> SA[📅 智能排期 Agent]
+    SA --> CA[🎨 动态创意 Agent]
+    CA --> AA[📈 效果归因 Agent]
+    AA --> R[投放结果]
+    
+    IA -.-> DB[(知识库 / RAG)]
+    SA -.-> DB
+    CA -.-> DB
+    AA -.-> DB
+```
+
+| Agent | 功能 | 核心技术 | 输入 → 输出 |
+|-------|------|---------|-------------|
+| 🔍 **人群洞察 Agent** | KMeans 聚类 + DMP 标签分析 | scikit-learn + LLM | 目标人群描述 → 人群包 |
+| 📅 **智能排期 Agent** | 多目标优化排期 | 四维评分 + 贪心算法 | 预算+时段+屏列表 → 最优排期 |
+| 🎨 **动态创意 Agent** | AIGC + DCO 实时优化 | LLM 生成 | 产品信息 → 多版创意 |
+| 📈 **效果归因 Agent** | 跨端匹配 + OneID | OTC 模型 + 多触点归因 | 投放日志 → 归因报告 |
+
+### AI 排期优化算法
+
+```
+Score(screen) = w₁ × traffic_score + w₂ × price_ratio + w₃ × audience_match + w₄ × district_bonus
+
+权重配置（目标可调）:
+  optimize_reach:     {traffic: 0.40, price: 0.25, audience: 0.20, district: 0.15}
+  optimize_frequency: {traffic: 0.20, price: 0.30, audience: 0.30, district: 0.20}  
+  balance (默认):     {traffic: 0.30, price: 0.25, audience: 0.25, district: 0.20}
+```
 ## 🚀 快速启动
 
 ### 1️⃣ 克隆项目
