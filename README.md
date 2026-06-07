@@ -217,6 +217,26 @@ cd backend
 | POST | `/api/v2/pdooh/campaigns` | 创建 AI 投放计划 |
 | GET | `/api/v2/pdooh/stats/districts` | 行政区屏量统计 |
 
+### AI 优化接口（v2.0.1）
+
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| GET | `/api/v2/optimization/scheduling/generate?budget=50000&days=14` | AI 排期优化 |
+| GET | `/api/v2/optimization/scheduling/optimize?campaign_id=xxx` | 基于历史数据优化 |
+| GET | `/api/v2/optimization/competitor/report?competitor_name=竞对A` | 竞品监控报告 |
+| GET | `/api/v2/optimization/competitor/compare?names=竞对A,竞对B` | 竞品对比分析 |
+| GET | `/api/v2/dashboard/overview` | 效果归因看板总览 |
+| GET | `/api/v2/dashboard/media-performance` | 媒体表现排行 |
+| GET | `/api/v2/dashboard/timeline?days=14` | 时间线表现 |
+| GET | `/api/v2/dashboard/funnel` | 转化漏斗 |
+
+### 鉴权说明
+
+所有 v2 API 支持两种鉴权模式：
+
+- **API Key**：请求头 `X-API-Key: aiad-2025-placer-token`
+- **Bearer Token**：请求头 `Authorization: Bearer aiad-2025-placer-token`
+
 ### A2A MCP 接口（AI-to-AI）
 
 外部 AI Agent 可通过 MCP 协议调用：
@@ -244,16 +264,41 @@ tools:
 
 ---
 
-## 🤖 AI Agent 能力
+## 🧠 AI Agents
 
-系统内置 4 个专业 Agent（LangGraph 编排）：
+系统内置 **4 个专业 Agent**，由 LangGraph 编排协同工作：
 
-| Agent | 功能 | 输入 → 输出 |
-|-------|------|------------|
-| 🔍 人群洞察 Agent | KMeans 聚类 + DMP 标签分析 | 目标人群描述 → 人群包 |
-| 📅 智能排期 Agent | FM + deepMCP 多目标优化 | 预算+时段+屏列表 → 最优排期 |
-| 🎨 动态创意 Agent | AIGC + DCO 实时优化 | 产品信息 → 多版创意 |
-| 📈 效果归因 Agent | 跨端匹配 + 可信 ID | 投放日志 → 归因报告 |
+```mermaid
+graph LR
+    U[用户输入] --> IA[🔍 人群洞察 Agent]
+    IA --> SA[📅 智能排期 Agent]
+    SA --> CA[🎨 动态创意 Agent]
+    CA --> AA[📈 效果归因 Agent]
+    AA --> R[投放结果]
+    
+    IA -.-> DB[(知识库 / RAG)]
+    SA -.-> DB
+    CA -.-> DB
+    AA -.-> DB
+```
+
+| Agent | 功能 | 核心技术 | 输入 → 输出 |
+|-------|------|---------|-------------|
+| 🔍 **人群洞察 Agent** | KMeans 聚类 + DMP 标签分析 | scikit-learn + LLM | 目标人群描述 → 人群包 |
+| 📅 **智能排期 Agent** | 多目标优化排期 | 四维评分 + 贪心算法 | 预算+时段+屏列表 → 最优排期 |
+| 🎨 **动态创意 Agent** | AIGC + DCO 实时优化 | LLM 生成 | 产品信息 → 多版创意 |
+| 📈 **效果归因 Agent** | 跨端匹配 + OneID | OTC 模型 + 多触点归因 | 投放日志 → 归因报告 |
+
+### AI 排期优化算法
+
+```
+Score(screen) = w₁ × traffic_score + w₂ × price_ratio + w₃ × audience_match + w₄ × district_bonus
+
+权重配置（目标可调）:
+  optimize_reach:     {traffic: 0.40, price: 0.25, audience: 0.20, district: 0.15}
+  optimize_frequency: {traffic: 0.20, price: 0.30, audience: 0.30, district: 0.20}  
+  balance (默认):     {traffic: 0.30, price: 0.25, audience: 0.25, district: 0.20}
+```
 
 ---
 
@@ -276,7 +321,8 @@ AIAdPlacer/
 │   │   │   └── ollama_client.py # Ollama HTTP 客户端
 │   │   ├── api/                # v1 传统 REST API
 │   │   └── bmn/               # BMN 品牌增长系统
-│   ├── bus-demo.html           # ⭐ bus-pDOOH 演示页面
+|   ├── bus-demo.html           # ⭐ bus-pDOOH 演示页面
+│   ├── optimization-demo.html  # ⭐ AI 优化模块演示页（排期/竞品/看板）
 │   └── venv/
 ├── demo.html                    # 前端 Demo（腾讯地图）
 ├── docs/
