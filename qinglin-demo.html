@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青柠AIpDOOH - AI Native 程序化数字户外广告</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-tertiary: #1a1a1a;
+    --bg-card: #141414;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.15);
+    --text-primary: #f0f0f0;
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-tertiary: rgba(255,255,255,0.3);
+    --gradient-start: #5B6CF7;
+    --gradient-mid: #8B5CF6;
+    --gradient-end: #EC4899;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ─ Navbar ── */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    background: rgba(10,10,10,0.7);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.3s;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  .nav-logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 400;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text-primary); }
+
+  .nav-cta {
+    padding: 8px 18px;
+    border-radius: 8px;
+    background: var(--text-primary);
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 40px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(91,108,247,0.12) 0%, rgba(139,92,246,0.06) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    border: 0.5px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero-title {
+    font-size: clamp(42px, 7vw, 80px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.8s ease 0.1s both;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text-secondary);
+    max-width: 640px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    animation: fadeUp 0.8s ease 0.3s both;
+  }
+
+  .btn-primary {
+    padding: 14px 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid));
+    color: white;
+    font-size: 14.5px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(91,108,247,0.3);
+  }
+
+  .btn-secondary {
+    padding: 14px 32px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14.5px;
+    font-weight: 500;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--border-hover);
+  }
+
+  /* ── Floating UI Mock ── */
+  .hero-visual {
+    margin-top: 72px;
+    width: 100%;
+    max-width: 960px;
+    animation: fadeUp 1s ease 0.4s both;
+    position: relative;
+  }
+
+  .hero-visual-inner {
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    overflow: hidden;
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5);
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .mock-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 0.5px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .mock-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+  }
+
+  .mock-dot:nth-child(1) { background: #ff5f57; }
+  .mock-dot:nth-child(2) { background: #febc2e; }
+  .mock-dot:nth-child(3) { background: #28c840; }
+
+  .mock-content {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .mock-card {
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    padding: 20px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .mock-card-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .mock-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .mock-chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 60px;
+    margin-top: 16px;
+  }
+
+  .mock-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, var(--gradient-start), var(--gradient-end));
+    animation: barGrow 1.5s ease forwards;
+    opacity: 0.7;
+  }
+
+  @keyframes barGrow {
+    from { height: 0; }
+  }
+
+  .mock-map {
+    height: 140px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, rgba(91,108,247,0.1), rgba(236,72,153,0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0.5px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mock-map-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .mock-map-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gradient-start);
+    animation: mapPulse 3s infinite;
+  }
+
+  @keyframes mapPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.5); opacity: 0.3; }
+  }
+
+  /* ── Section Common ── */
+  section {
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 64px;
+  }
+
+  /* ── Feature Cards ── */
+  .feature-section {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .feature-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .feature-card {
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    padding: 32px;
+    transition: border-color 0.3s, transform 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gradient-start), var(--gradient-end), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+
+  .feature-card h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+  }
+
+  .feature-card p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  .feature-icon-smart { background: rgba(91,108,247,0.12); }
+  .feature-icon-doc { background: rgba(139,92,246,0.12); }
+  .feature-icon-code { background: rgba(34,197,94,0.12); }
+  .feature-icon-team { background: rgba(236,72,153,0.12); }
+
+  /* ── Code Block with Typewriter ── */
+  .code-section {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .code-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .code-block-wrapper {
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    overflow: hidden;
+    max-width: 720px;
+  }
+
+  .code-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 0.5px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .code-filename {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .code-body {
+    padding: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-line {
+    display: flex;
+    gap: 16px;
+  }
+
+  .code-line-num {
+    color: var(--text-tertiary);
+    user-select: none;
+    min-width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .code-line-content {
+    flex: 1;
+  }
+
+  .code-keyword { color: #c678dd; }
+  .code-string { color: #98c379; }
+  .code-function { color: #61afef; }
+  .code-comment { color: var(--text-tertiary); font-style: italic; }
+  .code-type { color: #e5c07b; }
+  .code-param { color: #d19a66; }
+
+  .code-annotation {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-style: normal;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .annotation-green {
+    background: rgba(34,197,94,0.15);
+    color: #4ade80;
+  }
+
+  .annotation-blue {
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+  }
+
+  .annotation-purple {
+    background: rgba(139,92,246,0.15);
+    color: #a78bfa;
+  }
+
+  .annotation-pink {
+    background: rgba(236,72,153,0.15);
+    color: #f472b6;
+  }
+
+  .typewriter-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--gradient-start);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ── Dashboard Stats ── */
+  .dashboard-section {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .dashboard-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    padding: 24px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+
+  .stat-card:hover { border-color: var(--border-hover); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+
+  .stat-change {
+    font-size: 12px;
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-up { color: var(--green); }
+  .stat-down { color: #ef4444; }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+
+  .chart-card {
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    padding: 24px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+  }
+
+  .chart-area {
+    height: 220px;
+    position: relative;
+  }
+
+  .bar-chart-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 100%;
+    padding-top: 20px;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+    transition: height 1s ease;
+  }
+
+  .bar-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .donut-chart {
+    width: 180px;
+    height: 180px;
+    margin: 20px auto 0;
+    position: relative;
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-center-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .donut-center-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .donut-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .donut-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  /* ── 5V Model ── */
+  .model-section {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .model-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .model-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .model-card {
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    padding: 24px 20px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .model-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+  }
+
+  .model-card.featured {
+    border-color: rgba(91,108,247,0.3);
+    background: linear-gradient(180deg, rgba(91,108,247,0.06), var(--bg-card));
+  }
+
+  .model-card.featured::after {
+    content: '独家';
+    position: absolute;
+    top: -1px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 0 0 6px 6px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid));
+    color: white;
+  }
+
+  .model-v {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--gradient-start);
+    margin-bottom: 12px;
+  }
+
+  .model-icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .model-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .model-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center;
+    padding: 120px 40px;
+  }
+
+  .cta-box {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 64px 48px;
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    background: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gradient-start), var(--gradient-mid), var(--gradient-end), transparent);
+  }
+
+  .cta-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+  }
+
+  .cta-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    line-height: 1.7;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  /* ─ Footer ── */
+  .footer {
+    padding: 40px;
+    border-top: 0.5px solid var(--border);
+    text-align: center;
+  }
+
+  .footer p {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .navbar { padding: 0 20px; }
+    .nav-links { display: none; }
+    section { padding: 80px 20px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .feature-grid[style*="1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .model-cards { grid-template-columns: repeat(3, 1fr); }
+    .hero { padding: 100px 20px 60px; }
+    .mock-content { grid-template-columns: 1fr; }
+    .cta-actions { flex-direction: column; align-items: center; }
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .model-cards { grid-template-columns: 1fr 1fr; }
+    .hero-title { letter-spacing: -1px; }
+    .stat-value { font-size: 28px; }
+  }
+
+  /* ── Glow effect for feature cards on scroll ── */
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.4s;
+  }
+
+  .glow-border.active::after {
+    opacity: 0.15;
+  }
+
+  /* ── Line chart SVG ── */
+  .line-chart-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .line-path {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .line-area {
+    opacity: 0.1;
+  }
+
+  .chart-dot {
+    r: 3;
+    transition: r 0.2s;
+  }
+
+  .chart-dot:hover { r: 5; }
+
+  /* ── Typewriter reveal ── */
+  .typewriter-line {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .typewriter-line.revealed {
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span>青柠AIpDOOH</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#features">功能</a></li>
+    <li><a href="#code">API</a></li>
+    <li><a href="#market">市场</a></li>
+    <li><a href="#dashboard">数据</a></li>
+    <li><a href="#model">模型</a></li>
+    <li><a href="#capabilities">能力</a></li>
+  </ul>
+  <a href="https://github.com/tomwugdgz/AIAdPlacer" class="nav-cta" target="_blank">GitHub</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    全球首个开源 AI Native pDOOH 系统
+  </div>
+  <h1 class="hero-title">
+    <span class="gradient-text">青柠AIpDOOH</span><br>
+    程序化数字户外广告新范式
+  </h1>
+  <p class="hero-subtitle">
+    融合 LLM + Agent + RAG + Workflow + MCP，以社区人群数据为核心驱动力的<br>
+    AI 原生户外广告投放系统。让每一块屏幕都成为智能沟通节点。
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/tomwugdgz/AIAdPlacer" class="btn-primary" target="_blank">免费开源使用</a>
+    <a href="#features" class="btn-secondary">了解更多</a>
+  </div>
+
+  <!-- Floating UI Mockup -->
+  <div class="hero-visual">
+    <div class="hero-visual-inner">
+      <div class="mock-topbar">
+        <span class="mock-dot"></span>
+        <span class="mock-dot"></span>
+        <span class="mock-dot"></span>
+      </div>
+      <div class="mock-content">
+        <div class="mock-card">
+          <div class="mock-card-label">总曝光量</div>
+          <div class="mock-card-value gradient-text" id="heroImpressions">0</div>
+          <div class="mock-chart-bars">
+            <div class="mock-bar" style="height:40%"></div>
+            <div class="mock-bar" style="height:65%"></div>
+            <div class="mock-bar" style="height:45%"></div>
+            <div class="mock-bar" style="height:80%"></div>
+            <div class="mock-bar" style="height:55%"></div>
+            <div class="mock-bar" style="height:90%"></div>
+            <div class="mock-bar" style="height:70%"></div>
+            <div class="mock-bar" style="height:95%"></div>
+            <div class="mock-bar" style="height:60%"></div>
+            <div class="mock-bar" style="height:85%"></div>
+          </div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-card-label">覆盖屏幕</div>
+          <div class="mock-map">
+            <div class="mock-map-grid"></div>
+            <div class="mock-map-dot" style="top:25%;left:30%"></div>
+            <div class="mock-map-dot" style="top:50%;left:55%;animation-delay:0.5s"></div>
+            <div class="mock-map-dot" style="top:70%;left:40%;animation-delay:1s"></div>
+            <div class="mock-map-dot" style="top:35%;left:70%;animation-delay:1.5s"></div>
+            <div class="mock-map-dot" style="top:60%;left:25%;animation-delay:2s"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="feature-section" data-animate>
+    <div class="section-label">核心功能</div>
+    <h2 class="section-title">四大智能引擎</h2>
+    <p class="section-desc">基于 LangGraph 编排的四个专业 AI Agent，覆盖从人群洞察到效果归因的完整投放链路。</p>
+    <div class="feature-grid">
+      <div class="feature-card" data-animate-delay="0">
+        <div class="feature-icon feature-icon-smart">🎯</div>
+        <h3>Smart Reply 智能回复</h3>
+        <p>AI 人群洞察 Agent 通过 KMeans 聚类与 DMP 标签分析，自动识别高价值受众群体，输出精准人群包。支持自然语言交互，一句话完成复杂定向。</p>
+      </div>
+      <div class="feature-card" data-animate-delay="100">
+        <div class="feature-icon feature-icon-doc">📄</div>
+        <h3>Document Analysis 文档分析</h3>
+        <p>内置 RAG 向量检索引擎，基于 ChromaDB 存储行业知识与投放策略。快速解析 PDF 报告、竞品数据，自动生成投放建议方案。</p>
+      </div>
+      <div class="feature-card" data-animate-delay="200">
+        <div class="feature-icon feature-icon-code"></div>
+        <h3>Code Review 代码审查</h3>
+        <p>AI 智能排期 Agent 运用 FM + deepMCP 多目标优化算法，在预算约束下自动产出最优排期方案。内置合规检测，确保投放策略安全可控。</p>
+      </div>
+      <div class="feature-card" data-animate-delay="300">
+        <div class="feature-icon feature-icon-team">📊</div>
+        <h3>Team Insights 团队洞察</h3>
+        <p>效果归因 Agent 打通线上线下数据，基于真实到店轨迹构建可信归因模型。生成多维度可视化报告，驱动持续优化迭代。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Code Block -->
+<section id="code">
+  <div class="code-section" data-animate>
+    <div class="section-label">API 接口</div>
+    <h2 class="section-title">A2A 智能协作</h2>
+    <p class="section-desc">支持外部 AI Agent 通过标准 MCP 协议直接调用投放能力，实现机器间自动化协作。</p>
+    <div class="code-block-wrapper">
+      <div class="code-topbar">
+        <span class="code-filename">aiadplacer_mcp_tools.py</span>
+      </div>
+      <div class="code-body" id="codeBlock">
+        <!-- Typewriter content will be injected here -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Dashboard -->
+<section id="dashboard">
+  <div class="dashboard-section" data-animate>
+    <div class="section-label">数据面板</div>
+    <h2 class="section-title">实时数据洞察</h2>
+    <p class="section-desc">全链路数据追踪与可视化，让每一分预算的效果都清晰可见。</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">屏幕资产</div>
+        <div class="stat-value gradient-text" data-count="9801">0</div>
+        <div class="stat-change stat-up">↑ 覆盖全国 29 城</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">人群锚点</div>
+        <div class="stat-value" data-count="500" style="color: var(--green)">0</div>
+        <div class="stat-change stat-up">↑ 持续累积中</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">空间轨迹</div>
+        <div class="stat-value" data-count="8979" style="color: var(--amber)">0</div>
+        <div class="stat-change stat-up">↑ 真实到店证据</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">DMP 标签</div>
+        <div class="stat-value" data-count="10000" style="color: var(--blue)">0</div>
+        <div class="stat-change stat-up">↑ 55 维精准画像</div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">pDOOH 增长趋势</div>
+        <div class="chart-area" id="barChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">投放渠道占比</div>
+        <div class="donut-chart" id="donutChart"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Market Data -->
+<section id="market">
+  <div class="model-section" data-animate>
+    <div class="section-label">市场趋势</div>
+    <h2 class="section-title">pDOOH 的进化土壤</h2>
+    <p class="section-desc">全球户外媒体数字化转型浪潮下，程序化数字户外广告正成为核心增长极。</p>
+    <div class="stats-grid" style="margin-bottom: 40px;">
+      <div class="stat-card">
+        <div class="stat-label">全球 pDOOH 占比</div>
+        <div class="stat-value gradient-text" style="font-size:32px" data-count="9">0<small style="font-size:16px">%</small></div>
+        <div class="stat-change" style="color:var(--text-tertiary)">全球 DOOH 支出中</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">德国市场渗透</div>
+        <div class="stat-value" data-count="32" style="color: var(--green);font-size:32px">0<small style="font-size:16px">%</small></div>
+        <div class="stat-change stat-up">远超全球均值</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">全球支出同比增长</div>
+        <div class="stat-value" data-count="35" style="color: var(--amber);font-size:32px">0<small style="font-size:16px">%</small></div>
+        <div class="stat-change stat-up">强劲增长势头</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">计划增加投入</div>
+        <div class="stat-value" data-count="70" style="color: var(--blue);font-size:32px">0<small style="font-size:16px">%</small></div>
+        <div class="stat-change stat-up">受访者计划 18 个月内</div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">全球市场 pDOOH/DOOH 占比 TOP5</div>
+        <div class="bar-chart-container" id="marketBarChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">传统 OOH vs DOOH 支出占比</div>
+        <div class="donut-chart" id="spendChart"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5V Model -->
+<section id="model">
+  <div class="model-section" data-animate>
+    <div class="section-label">数据底座</div>
+    <h2 class="section-title">青柠 5V 数据模型</h2>
+    <p class="section-desc">以 TAID 为唯一标识，五层数据维度协同驱动精准定向与高效转化。</p>
+    <div class="model-cards">
+      <div class="model-card">
+        <div class="model-v">V1</div>
+        <div class="model-name">人口属性</div>
+        <div class="model-desc">年龄/性别/学历/收入<br>基础人群定向</div>
+      </div>
+      <div class="model-card">
+        <div class="model-v">V2</div>
+        <div class="model-name">消费偏好</div>
+        <div class="model-desc">DMP 标签画像<br>精准兴趣投放</div>
+      </div>
+      <div class="model-card">
+        <div class="model-v">V3</div>
+        <div class="model-name">社区属性</div>
+        <div class="model-desc">楼盘/户型/房价<br>社区价值评估</div>
+      </div>
+      <div class="model-card featured">
+        <div class="model-v">V4</div>
+        <div class="model-name">门禁动作</div>
+        <div class="model-desc">真实到店轨迹<br>独家空间数据</div>
+      </div>
+      <div class="model-card">
+        <div class="model-v">V5</div>
+        <div class="model-name">线上行为</div>
+        <div class="model-desc">跨屏人群扩展<br>全链路追踪</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 Capabilities -->
+<section id="capabilities">
+  <div class="model-section" data-animate>
+    <div class="section-label">核心能力</div>
+    <h2 class="section-title">五大核心数据定向能力</h2>
+    <p class="section-desc">打破传统户外广告难以精准、无法联动的局限，让每一块屏幕成为智能沟通节点。</p>
+    <div class="feature-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="feature-card">
+        <div class="feature-icon feature-icon-smart"></div>
+        <h3>曝光量统计</h3>
+        <p>依托 MAM 系统地铁曝光量测算模型，结合车站人数、客流线、媒体尺寸、广告播放时长，算出核心指标曝光量，实现曝光效率与成本的精准平衡。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon feature-icon-doc"></div>
+        <h3>POI 场景定向</h3>
+        <p>借助移动设备定位数据及第三方 LBS 服务，基于受众与特定兴趣点的邻近关系，实现超本地化触达与高度适配的信息传递。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon feature-icon-code"></div>
+        <h3>TA 标签定向</h3>
+        <p>整合第三方数据服务商、品牌自有 CRM 系统等多渠道数据，提炼受众人口统计、消费心理、行为偏好等核心标签，精准定义目标人群画像。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon feature-icon-team"></div>
+        <h3>外部数据联动定向</h3>
+        <p>联动天气、实时位置、消费动态等外部数据，将 pDOOH 投放与现实环境因素深度绑定。基于数据触发动态调整广告创意内容，显著提升广告相关性。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(245,158,11,0.12)"></div>
+        <h3>跨渠道再营销定向</h3>
+        <p>将 pDOOH 曝光过的受众整合为专属人群包，实现营销资产的二次利用。对目标受众开展跨渠道、多触点的持续曝光，提升整体营销链路转化效率。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-box" data-animate>
+    <h2 class="cta-title">开始构建你的 <span class="gradient-text">AIpDOOH</span></h2>
+    <p class="cta-desc">
+      MIT 开源协议，全球首个完整的 AI Native pDOOH 系统。<br>
+      从个人验证工具到 SaaS 平台，商业化路径清晰可见。
+    </p>
+    <div class="cta-actions">
+      <a href="https://github.com/tomwugdgz/AIAdPlacer" class="btn-primary" target="_blank">GitHub 仓库</a>
+      <a href="http://duckwolf.cn/cps2.html" class="btn-secondary" target="_blank">在线体验</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>青柠AIpDOOH 由 tomwugdgz 开源贡献 · MIT License · 2026</p>
+</footer>
+
+<script>
+// ── Intersection Observer ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const delay = el.dataset.animateDelay || 0;
+      setTimeout(() => {
+        el.classList.add('visible');
+      }, delay);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+
+// ── Navbar scroll effect ──
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const navbar = document.getElementById('navbar');
+  const scrollY = window.scrollY;
+  if (scrollY > 50) {
+    navbar.style.background = 'rgba(10,10,10,0.92)';
+  } else {
+    navbar.style.background = 'rgba(10,10,10,0.7)';
+  }
+  lastScroll = scrollY;
+});
+
+// ── Count-up animation ──
+function animateCount(el, target, duration = 2000) {
+  const start = 0;
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + (target - start) * eased);
+
+    if (target >= 1000) {
+      el.textContent = current.toLocaleString();
+    } else {
+      el.textContent = current;
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+// Count up for stats
+const countObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const target = parseInt(el.dataset.count);
+      animateCount(el, target);
+      countObserver.unobserve(el);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('[data-count]').forEach(el => countObserver.observe(el));
+
+// Hero impressions count
+const heroImp = document.getElementById('heroImpressions');
+if (heroImp) {
+  const hiObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCount(heroImp, 2847653, 2500);
+        hiObserver.unobserve(heroImp);
+      }
+    });
+  }, { threshold: 0.5 });
+  hiObserver.observe(heroImp);
+}
+
+// ── Typewriter effect ──
+const codeLines = [
+  { num: 1, content: '<span class="code-keyword">class</span> <span class="code-type">AIAdPlacerMCP</span>:', annotation: '' },
+  { num: 2, content: '    <span class="code-comment"># 标准 MCP 协议工具集</span>', annotation: '' },
+  { num: 3, content: '    <span class="code-keyword">@tool</span>', annotation: '<span class="code-annotation annotation-green">MCP 标准</span>' },
+  { num: 4, content: '    <span class="code-keyword">def</span> <span class="code-function">search_screens</span>(<span class="code-param">location</span>, <span class="code-param">radius</span>):', annotation: '' },
+  { num: 5, content: '        <span class="code-string">"""基于地理位置搜索可用屏幕"""</span>', annotation: '' },
+  { num: 6, content: '        <span class="code-keyword">return</span> <span class="code-type">Screen</span>.<span class="code-function">nearby</span>(<span class="code-param">location</span>, <span class="code-param">radius</span>)', annotation: '<span class="code-annotation annotation-blue">LBS 定位</span>' },
+  { num: 7, content: '', annotation: '' },
+  { num: 8, content: '    <span class="code-keyword">@tool</span>', annotation: '<span class="code-annotation annotation-purple">Agent 调用</span>' },
+  { num: 9, content: '    <span class="code-keyword">def</span> <span class="code-function">create_campaign</span>(<span class="code-param">budget</span>, <span class="code-param">target_audience</span>):', annotation: '' },
+  { num: 10, content: '        <span class="code-string">"""创建 AI 优化投放方案"""</span>', annotation: '' },
+  { num: 11, content: '        <span class="code-keyword">return</span> <span class="code-type">Agent</span>.<span class="code-function">optimize</span>({', annotation: '' },
+  { num: 12, content: '            <span class="code-string">"budget"</span>: <span class="code-param">budget</span>,', annotation: '' },
+  { num: 13, content: '            <span class="code-string">"5v_model"</span>: <span class="code-string">True</span>,', annotation: '<span class="code-annotation annotation-pink">5V 模型</span>' },
+  { num: 14, content: '            <span class="code-string">"compliance"</span>: <span class="code-string">"auto"</span>', annotation: '' },
+  { num: 15, content: '        })', annotation: '' },
+  { num: 16, content: '', annotation: '' },
+  { num: 17, content: '    <span class="code-keyword">@tool</span>', annotation: '<span class="code-annotation annotation-green">独家能力</span>' },
+  { num: 18, content: '    <span class="code-keyword">def</span> <span class="code-function">verify_store_visit</span>(<span class="code-param">campaign_id</span>):', annotation: '' },
+  { num: 19, content: '        <span class="code-string">"""基于门禁数据验证真实到店"""</span>', annotation: '' },
+  { num: 20, content: '        <span class="code-keyword">return</span> <span class="code-type">Trajectory</span>.<span class="code-function">match</span>(<span class="code-param">campaign_id</span>)', annotation: '<span class="code-annotation annotation-blue">真实到店</span>' },
+];
+
+const codeBlock = document.getElementById('codeBlock');
+let codeAnimated = false;
+
+const codeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !codeAnimated) {
+      codeAnimated = true;
+      typeCodeLines();
+      codeObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+codeObserver.observe(codeBlock);
+
+function typeCodeLines() {
+  let lineIndex = 0;
+
+  function addNextLine() {
+    if (lineIndex >= codeLines.length) return;
+
+    const line = codeLines[lineIndex];
+    const lineEl = document.createElement('div');
+    lineEl.className = 'code-line typewriter-line';
+    lineEl.innerHTML = `
+      <span class="code-line-num">${line.num}</span>
+      <span class="code-line-content">${line.content}${line.annotation} ${lineIndex === codeLines.length - 1 ? '<span class="typewriter-cursor"></span>' : ''}</span>
+    `;
+    codeBlock.appendChild(lineEl);
+
+    requestAnimationFrame(() => {
+      lineEl.classList.add('revealed');
+    });
+
+    lineIndex++;
+    setTimeout(addNextLine, 80 + Math.random() * 60);
+  }
+
+  addNextLine();
+}
+
+// ── Bar Chart ──
+function renderBarChart() {
+  const container = document.getElementById('barChart');
+  if (!container) return;
+
+  const data = [
+    { label: '2022', value: 35, color: 'rgba(91,108,247,0.4)' },
+    { label: '2023', value: 52, color: 'rgba(91,108,247,0.55)' },
+    { label: '2024', value: 78, color: 'rgba(91,108,247,0.7)' },
+    { label: '2025E', value: 115, color: 'rgba(139,92,246,0.8)' },
+    { label: '2026E', value: 168, color: 'rgba(139,92,246,0.9)' },
+    { label: '2027E', value: 235, color: 'rgba(236,72,153,0.9)' },
+  ];
+
+  const maxVal = Math.max(...data.map(d => d.value));
+  let html = '<div class="bar-chart-container">';
+  data.forEach((d, i) => {
+    const height = (d.value / maxVal) * 100;
+    html += `
+      <div class="bar-group">
+        <div class="bar" style="height:0%;background:${d.color}" data-height="${height}"></div>
+        <div class="bar-label">${d.label}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+renderBarChart();
+
+// Animate bars on scroll
+const barObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const bars = entry.target.querySelectorAll('.bar');
+      bars.forEach((bar, i) => {
+        setTimeout(() => {
+          bar.style.height = bar.dataset.height + '%';
+        }, i * 120);
+      });
+      barObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+const barChartEl = document.getElementById('barChart');
+if (barChartEl) barObserver.observe(barChartEl);
+
+// ─ Market Bar Chart ──
+function renderMarketBarChart() {
+  const container = document.getElementById('marketBarChart');
+  if (!container) return;
+  const data = [
+    { label: '德国', value: 32.4 },
+    { label: '荷兰', value: 29.6 },
+    { label: '比利时', value: 19.4 },
+    { label: '西班牙', value: 15.0 },
+    { label: '新西兰', value: 10.6 },
+    { label: '集团平均', value: 9.5 },
+    { label: '全球', value: 8.8 },
+  ];
+  const maxVal = Math.max(...data.map(d => d.value));
+  let html = '<div class="bar-chart-container">';
+  data.forEach((d, i) => {
+    const height = (d.value / maxVal) * 100;
+    const opacity = 0.4 + (i / data.length) * 0.6;
+    html += '<div class="bar-group"><div class="bar" style="height:0%;background:rgba(91,108,247,' + opacity + ')" data-height="' + height + '"></div><div class="bar-label">' + d.label + '</div></div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+renderMarketBarChart();
+
+// Animate market bars
+const marketBarEl = document.getElementById('marketBarChart');
+if (marketBarEl) {
+  const mbo = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const bars = entry.target.querySelectorAll('.bar');
+        bars.forEach((bar, i) => { setTimeout(() => { bar.style.height = bar.dataset.height + '%'; }, i * 100); });
+        mbo.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  mbo.observe(marketBarEl);
+}
+
+// ── Spend Donut Chart ──
+function renderSpendChart() {
+  const container = document.getElementById('spendChart');
+  if (!container) return;
+  const data = [
+    { label: '传统 OOH', value: 59.5, color: '#5B6CF7' },
+    { label: 'DOOH', value: 40.5, color: '#EC4899' },
+  ];
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const size = 180; const cx = size / 2; const cy = size / 2;
+  const r = 65; const strokeWidth = 28;
+  let cumulative = 0; let paths = '';
+  data.forEach(d => {
+    const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+    cumulative += d.value;
+    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const largeArc = d.value / total > 0.5 ? 1 : 0;
+    paths += '<path d="M ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + '" fill="none" stroke="' + d.color + '" stroke-width="' + strokeWidth + '" stroke-linecap="round" style="opacity:0.85"/>';
+  });
+  container.innerHTML = '<svg viewBox="0 0 ' + size + ' ' + size + '">' + paths + '</svg><div class="donut-center"><div class="donut-center-value gradient-text">100%</div><div class="donut-center-label">总支出</div></div><div class="donut-legend">' + data.map(d => '<div class="donut-legend-item"><span class="donut-legend-dot" style="background:' + d.color + '"></span>' + d.label + ' ' + d.value + '%</div>').join('') + '</div>';
+}
+renderSpendChart();
+
+// ─ Donut Chart (SVG) ──
+function renderDonutChart() {
+  const container = document.getElementById('donutChart');
+  if (!container) return;
+
+  const data = [
+    { label: '地铁媒体', value: 42, color: '#5B6CF7' },
+    { label: '社区媒体', value: 28, color: '#8B5CF6' },
+    { label: '公交媒体', value: 18, color: '#EC4899' },
+    { label: '商圈媒体', value: 12, color: '#f59e0b' },
+  ];
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const size = 180;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 70;
+  const strokeWidth = 24;
+
+  let cumulative = 0;
+  let paths = '';
+
+  data.forEach(d => {
+    const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+    cumulative += d.value;
+    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+
+    const largeArc = d.value / total > 0.5 ? 1 : 0;
+
+    paths += `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}" fill="none" stroke="${d.color}" stroke-width="${strokeWidth}" stroke-linecap="round" style="opacity:0.85"/>`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${size} ${size}" class="donut-chart-svg">
+      ${paths}
+    </svg>
+    <div class="donut-center">
+      <div class="donut-center-value gradient-text">${total}%</div>
+      <div class="donut-center-label">市场覆盖</div>
+    </div>
+    <div class="donut-legend">
+      ${data.map(d => `
+        <div class="donut-legend-item">
+          <span class="donut-legend-dot" style="background:${d.color}"></span>
+          ${d.label} ${d.value}%
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+renderDonutChart();
+</script>
+
+</body>
+</html>
