@@ -1,0 +1,260 @@
+AIAdPlacer A2A/MCP 调用指南
+
+一、接口基础信息
+项目
+值
+Base URL
+`http://47.253.159.62:5002`
+MCP Endpoint
+`/api/v2/mcp/pdooh/tools/call`
+Skill YAML
+`/api/v2/mcp/pdooh/skill.yaml`
+Agent API
+`/api/v2/agents/execute`
+API 文档
+`http://47.253.159.62:5002/docs`
+
+二、获取可用工具列表
+
+请求：
+GET /api/v2/mcp/pdooh/tools/list
+
+响应示例：
+{
+  "tools": [
+    {
+      "name": "pdooh_query_screens",
+      "description": "查询符合条件的智能屏...",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "city": {"type": "string", "description": "城市，如'广州'"},
+          "district": {"type": "string", "description": "区县，如'天河区'"},
+          "limit": {"type": "integer", "description": "返回数量上限"}
+        }
+      }
+    }
+  ]
+}
+
+三、调用工具 (MCP Protocol)
+
+请求：
+POST /api/v2/mcp/pdooh/tools/call
+Content-Type: application/json
+
+{
+  "name": "工具名称",
+  "arguments": {
+    // 工具参数
+  }
+}
+
+示例 1：查询智能屏点位
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_query_screens",
+    "arguments": {
+      "city": "广州",
+      "district": "天河区",
+      "min_house_price": 8,
+      "limit": 10
+    }
+  }'
+
+响应：
+{
+  "content": [
+    {
+      "id": 1,
+      "name": "天河城社区门禁屏",
+      "city": "广州",
+      "district": "天河区",
+      "lat": 23.1291,
+      "lng": 113.3642,
+      "house_price": 8,
+      "tags": ["高端白酒", "母婴", "美妆"],
+      "impressions_per_day": 3200
+    }
+  ]
+}
+
+示例 2：创建投放计划
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_create_campaign",
+    "arguments": {
+      "name": "高端白酒-天河城-周投",
+      "screen_ids": [1, 2, 3],
+      "start_date": "2026-06-10",
+      "end_date": "2026-06-16",
+      "budget": 30000,
+      "creative_type": "image"
+    }
+  }'
+
+响应：
+{
+  "content": [
+    "投放计划已创建: id=1, name=高端白酒-天河城-周投"
+  ]
+}
+
+示例 3：人群洞察分析
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_audience_insight",
+    "arguments": {
+      "target_city": "广州",
+      "product_desc": "高端白酒，目标高净值人群",
+      "budget_hint": 50000
+    }
+  }'
+
+示例 4：合规审核
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_compliance_check",
+    "arguments": {
+      "content": "治愈你的失眠",
+      "industry": "医疗"
+    }
+  }'
+
+四、Agent 任务执行 (A2A 编排)
+
+请求：
+POST /api/v2/agents/execute
+Content-Type: application/json
+
+{
+  "task": "你的投放需求描述",
+  "agent": "audience|schedule|creative|attribution"
+}
+
+示例：完整的投放方案生成
+curl -X POST http://47.253.159.62:5002/api/v2/agents/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": "帮我在广州天河区投放高端白酒广告，预算50万，投放14天",
+    "agent": "audience"
+  }'
+
+响应：
+{
+  "workflow": "AIAdPlacer CPS 2.0 Agent Orchestration",
+  "status": "completed",
+  "iterations": 2,
+  "errors": [],
+  "plan": "投放方案规划:\n- 城市: 广州\n- 行业: retail\n- 预算: ¥50,000\n- 目标: 提升品牌认知度\n- 投放周期: 14 天",
+  "audience_insight": {
+    "clusters": [
+      {
+        "cluster_id": 0,
+        "cluster_type": "高流量核心商圈",
+        "size": 8,
+        "avg_foot_traffic": 25000
+      }
+    ]
+  }
+}
+
+五、Skill YAML (供 AI Agent 加载)
+GET /api/v2/mcp/pdooh/skill.yaml
+
+返回格式：
+name: pdooh-agent
+description: >
+  pDOOH AI原生投放平台 Skill。
+  让 AI Agent 能直接调用 pDOOH 投放能力。  
+
+triggers:
+  - "pDOOH"
+  - "户外广告投放"
+  - "社区屏"
+  - "程序化户外"
+  - "投放计划"
+
+tools:
+  - pdooh_query_screens
+  - pdooh_get_screen_audience
+  - pdooh_create_campaign
+  - pdooh_query_campaigns
+  - pdooh_submit_creative
+  - pdooh_query_report
+  - pdooh_compliance_check
+  - pdooh_audience_insight
+
+mcp_endpoint: "/api/v2/mcp/pdooh/tools/call"
+
+六、Python SDK 调用示例
+import requests
+
+BASE_URL = "http://47.253.159.62:5002"
+
+**1. 查询智能屏**
+def query_screens(city, district, limit=10):
+    response = requests.post(
+        f"{BASE_URL}/api/v2/mcp/pdooh/tools/call",
+        json={
+            "name": "pdooh_query_screens",
+            "arguments": {
+                "city": city,
+                "district": district,
+                "limit": limit
+            }
+        }
+    )
+    return response.json()
+
+**2. 创建投放计划**
+def create_campaign(name, screen_ids, budget, start_date, end_date):
+    response = requests.post(
+        f"{BASE_URL}/api/v2/mcp/pdooh/tools/call",
+        json={
+            "name": "pdooh_create_campaign",
+            "arguments": {
+                "name": name,
+                "screen_ids": screen_ids,
+                "budget": budget,
+                "start_date": start_date,
+                "end_date": end_date
+            }
+        }
+    )
+    return response.json()
+
+**3. 调用 Agent 编排**
+def execute_agent(task, agent="audience"):
+    response = requests.post(
+        f"{BASE_URL}/api/v2/agents/execute",
+        json={"task": task, "agent": agent}
+    )
+    return response.json()
+
+**使用**
+screens = query_screens("广州", "天河区")
+campaign = create_campaign(
+    name="高端白酒-天河城-周投",
+    screen_ids=[1, 2, 3],
+    budget=30000,
+    start_date="2026-06-10",
+    end_date="2026-06-16"
+)
+result = execute_agent("帮我在广州天河区投放高端白酒广告")
+
+七、健康检查
+curl http://47.253.159.62:5002/api/v2/mcp/pdooh/health
+
+响应：
+{
+  "service": "pDOOH A2A MCP Server",
+  "status": "ok",
+  "tools_count": 8,
+  "mcp_endpoint": "/api/v2/mcp/pdooh/tools/call",
+  "skill_endpoint": "/api/v2/mcp/pdooh/skill.yaml"
+}
