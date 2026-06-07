@@ -95,17 +95,8 @@ AIAdPlacer 填补了这个空白：
 
 > 💡 **V4 门禁数据**是青柠科技的核心壁垒——每次「开门」都是一次真实到店验证，任何其他 pDOOH 系统都不具备这个数据维度。
 
+---
 
-### AI 排期优化算法
-
-```
-Score(screen) = w₁ × traffic_score + w₂ × price_ratio + w₃ × audience_match + w₄ × district_bonus
-
-权重配置（目标可调）:
-  optimize_reach:     {traffic: 0.40, price: 0.25, audience: 0.20, district: 0.15}
-  optimize_frequency: {traffic: 0.20, price: 0.30, audience: 0.30, district: 0.20}  
-  balance (默认):     {traffic: 0.30, price: 0.25, audience: 0.25, district: 0.20}
-```
 ## 🚀 快速启动
 
 ### 1️⃣ 克隆项目
@@ -427,26 +418,64 @@ result = mcp_call(
 - [ ] v2.3 迪杰斯特拉路径优化 + 运营商数据接入
 - [ ] v3.0 多城市扩展（深圳/佛山/东莞）+ 地铁/机场场域模型
 
-### 🖥️ AI pDOOH 服务配置（云服务器）
+### 🖥️ AI pDOOH 云服务（运行中）
 
 | 项目 | 值 |
 |------|------|
-| 地址 | `http://47.253.159.62:8899` |
-| 协议 | REST + MCP |
-| 权限 | 只读 |
-| API Key | `pdooh-agent-key-2026` |
+| 地址 | `http://47.253.159.62:5002` |
+| 协议 | REST + MCP (A2A) |
 | 状态 | ✅ 运行中 |
 
-#### 📁 部署文件
+#### 🔌 A2A / MCP 接口清单
 
-| 文件 | 用途 |
-|------|------|
-| `skills/ai-pdooh/SKILL.md` | Agent 调用接口文档 |
-| `start_pdooh.sh` | 服务管理脚本 |
-| `AIAdPlacer/app/api/main.py` | API 服务器 |
-| `AIAdPlacer/app/core/brain.py` | 核心逻辑（已更新） |
+| 接口 | 地址 | 说明 |
+|------|------|------|
+| MCP Health | `http://47.253.159.62:5002/api/v2/mcp/pdooh/health` | 健康检查 |
+| MCP Tools List | `http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list` | 列出 8 个工具 |
+| MCP Tool Call | `http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call` | 调用具体工具 |
+| Skill YAML | `http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml` | SKILL 配置（供 AI Agent 读取） |
+| Agent Execute | `http://47.253.159.62:5002/api/v2/agents/execute` | A2A 任务编排 |
+| API 文档 | `http://47.253.159.62:5002/docs` | Swagger UI |
 
-#### 🎮 管理命令
+#### 🛠️ 8 个 MCP Tools
+
+| 工具名 | 功能 |
+|--------|------|
+| `pdooh_query_screens` | 查询智能屏点位 |
+| `pdooh_get_screen_audience` | 获取人群画像 |
+| `pdooh_create_campaign` | 创建投放计划 |
+| `pdooh_query_campaigns` | 查询投放计划 |
+| `pdooh_submit_creative` | 提交创意物料 |
+| `pdooh_query_report` | 查询效果报告 |
+| `pdooh_compliance_check` | 合规审核 |
+| `pdooh_audience_insight` | 人群洞察分析 |
+
+#### 📋 SKILL 调用示例
+
+任何 AI Agent 可通过以下方式调用本系统：
+
+```yaml
+# 1. 读取 SKILL 配置
+GET http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml
+
+# 2. 调用具体工具
+POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call
+Content-Type: application/json
+
+{
+  "tool": "pdooh_create_campaign",
+  "params": {
+    "name": "母婴人群投放",
+    "budget": 50000,
+    "audience_tags": ["母婴", "亲子"],
+    "days": 14
+  }
+}
+```
+
+**触发词**：`pDOOH`、`户外广告投放`、`社区屏`、`投放计划` 等
+
+#### 🎮 云服务器管理命令
 
 ```bash
 # 启动服务
@@ -466,7 +495,7 @@ result = mcp_call(
 
 ```bash
 # 健康检查
-curl http://47.253.159.62:8899/health
+curl http://47.253.159.62:5002/api/health
 
 # 品牌查询
 curl -X POST http://47.253.159.62:8899/v1/search \
@@ -480,67 +509,6 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
   -H "X-API-Key: pdooh-agent-key-2026" \
   -d '{"brand":"元气森林","media":"广告门","city":"广州"}'
 ```
-
-#### 🔌 API 端点
-
-| 端点 | 方法 | 功能 |
-|------|------|------|
-| `/health` | GET | 健康检查 |
-| `/v1/quote` | POST | 智能定价 |
-| `/v1/search` | POST | 品牌查询 |
-| `/v1/recommend` | POST | 媒体推荐 |
-| `/v1/competitor` | POST | 竞品分析 |
-| `/v1/campaign` | POST | 方案生成 |
-| `/v1/mcp-tools` | GET | MCP 工具列表 |
-/home/admin/.copaw/workspaces/default/start_pdooh.sh stop
-
-**查看状态**
-/home/admin/.copaw/workspaces/default/start_pdooh.sh status
-
-**重启服务**
-/home/admin/.copaw/workspaces/default/start_pdooh.sh restart
-
-🔌 API端点
-端点
-方法
-功能
-`/health`
-GET
-健康检查
-`/v1/quote`
-POST
-智能定价
-`/v1/search`
-POST
-品牌查询
-`/v1/recommend`
-POST
-媒体推荐
-`/v1/competitor`
-POST
-竞品分析
-`/v1/campaign`
-POST
-方案生成
-`/v1/mcp-tools`
-GET
-MCP工具列表
-
-🧪 测试命令
-**健康检查**
-curl http://47.253.159.62:8899/health
-
-**品牌查询**
-curl -X POST http://47.253.159.62:8899/v1/search \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: pdooh-agent-key-2026" \
-  -d '{"brand":"农夫山泉"}'
-
-**智能定价**
-curl -X POST http://47.253.159.62:8899/v1/quote \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: pdooh-agent-key-2026" \
-  -d '{"brand":"元气森林","media":"广告门","city":"广州"}'
 
 ---
 
