@@ -258,3 +258,68 @@ curl http://47.253.159.62:5002/api/v2/mcp/pdooh/health
   "mcp_endpoint": "/api/v2/mcp/pdooh/tools/call",
   "skill_endpoint": "/api/v2/mcp/pdooh/skill.yaml"
 }
+
+✅ 广州道闸广告点位数据库已建立并接入 MCP
+
+现在 AIAdPlacer 系统支持查询真实道闸数据了！
+
+📊 数据库概览
+统计项
+数值
+总点位
+1,021 个
+覆盖区域
+11 个区
+覆盖商圈
+72 个
+覆盖社区
+512 个
+表名
+`guangzhoubarrierpoints`
+数据库
+PostgreSQL `ai_adplacer`
+
+🛠️ 新增 MCP 工具
+#
+工具名
+说明
+9
+`pdoohquerydaocha_points`
+查询广州道闸广告点位
+
+📍 区域分布
+区域
+点位数
+日均车流量
+天河区
+277
+1,643,900 辆
+海珠区
+183
+3,352,080 辆
+白云区
+140
+2,705,457 辆
+黄埔区
+135
+1,639,950 辆
+荔湾区
+87
+893,250 辆
+
+🔌 调用示例
+**按区域查询**
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_query_daocha_points",
+    "arguments": {"district": "天河区", "limit": 10}
+  }'
+
+**按商圈+车流量筛选**
+curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pdooh_query_daocha_points",
+    "arguments": {"business_zone": "珠江新城商圈", "min_car_traffic": 5000}
+  }'
