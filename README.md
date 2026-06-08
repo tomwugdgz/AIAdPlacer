@@ -635,9 +635,9 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 
 > 🌐 **个人网站**：[duckwolf.cn](http://duckwolf.cn) —— AI 科技 · RWA 研究 · pDOOH 实践
 >
-> 📖 **技术博客**：[duckwolf.cn/blog](http://duckwolf.cn/blog) —— 持续更新 AIAdPlacer 开发实录
+> 📖 **技术博客**：[duckwolf.cn/blog](http://duckwolf.cn) —— 持续更新 AIAdPlacer 开发实录
 >
-> 💬 **商务合作**：tom@duckwolf.cn
+> 💬 **商务合作**：duckwolf@qq.com
 >
 > 🐙 **GitHub**：[@tomwugdgz](https://github.com/tomwugdgz)
 
@@ -650,7 +650,7 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 > 本项目所有语料、数据库及资源均来源于公开渠道或模拟生成，仅供技术研究与学习交流使用。
 > 如因数据使用涉及侵权问题，请及时联系作者处理。**本软件并非用于商业用途。**
 > 
-> 📧 联系方式：[tom@duckwolf.cn](mailto:tom@duckwolf.cn)
+> 📧 联系方式：[tom@duckwolf.cn](mailto:duckwolf@qq.com)
 
 ---
 
