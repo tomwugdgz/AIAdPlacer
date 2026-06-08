@@ -12,6 +12,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app.services.knowledge_base import auto_store_mcp_result
+
 router = APIRouter(prefix="/api/v2/mcp/pdooh", tags=["pDOOH A2A MCP"])
 
 logger = logging.getLogger(__name__)
@@ -199,140 +201,127 @@ async def mcp_tools_call(body: ToolCallRequest, request: Request):
     """
     MCP protocol: 执行 Tool 调用
     AI Agent 通过此接口调用 pDOOH 能力
+    每次调用结果自动归档到知识库（data/knowledge/）
     """
     tool_name = body.name
     args = body.arguments
 
     logger.info(f"[A2A MCP] Tool调用: {tool_name}, args={args}")
 
+    result = None
+
+    try:
+
     # ── Tool 1: 查询屏 ──
     if tool_name == "pdooh_query_screens":
         results = MOCK_SCREENS.copy()
-        # 城市筛选
         if args.get("city"):
             results = [s for s in results if s["city"] == args["city"]]
-        # 区县筛选
         if args.get("district"):
             results = [s for s in results if s["district"] == args["district"]]
-        # 房价筛选
         if args.get("min_house_price"):
             results = [s for s in results
                        if s.get("house_price", 0) >= args["min_house_price"]]
-        # 标签筛选
         if args.get("tags"):
             results = [s for s in results
                        if any(t in s.get("tags", []) for t in args["tags"])]
         limit = args.get("limit", 20)
-        return {"content": [{"type": "text",
-                              "text": json.dumps(results[:limit], ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(results[:limit], ensure_ascii=False)}]}
 
     # ── Tool 2: 获取屏人群画像 ──
-    if tool_name == "pdooh_get_screen_audience":
+    elif tool_name == "pdooh_get_screen_audience":
         screen_id = args["screen_id"]
         screen = next((s for s in MOCK_SCREENS if s["id"] == screen_id), None)
         if not screen:
             raise HTTPException(status_code=404, detail="Screen not found")
-        # 模拟人群画像（参考XX5V模型）
         audience = {
             "screen_id": screen_id,
             "screen_name": screen["name"],
             "demographics": {
-                "age_25_35": "45%",
-                "age_35_45": "38%",
-                "gender_female": "62%",
-                "education_bachelor+": "71%",
+                "age_25_35": "45%", "age_35_45": "38%",
+                "gender_female": "62%", "education_bachelor+": "71%",
             },
             "consumption": {
-                "high_end_liquor": "68%",   # 高端白酒
-                "makeup": "55%",
+                "high_end_liquor": "68%", "makeup": "55%",
                 "mother_baby": "42%" if "母婴" in screen.get("tags", []) else "18%",
             },
             "community": {
                 "avg_house_price_wan": screen.get("house_price", 5) * 10000,
-                "households": 1200,
-                "door_open_per_day": 3200,  # 开门行动数据（IoT）
+                "households": 1200, "door_open_per_day": 3200,
             },
             "recommendation": "该屏人群与高端白酒高度匹配，建议投放"
         }
-        return {"content": [{"type": "text",
-                              "text": json.dumps(audience, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(audience, ensure_ascii=False)}]}
 
     # ── Tool 3: 创建投放计划 ──
-    if tool_name == "pdooh_create_campaign":
+    elif tool_name == "pdooh_create_campaign":
         campaign_id = len(MOCK_CAMPAIGNS) + 1
         new_campaign = {
-            "id": campaign_id,
-            "name": args["name"],
+            "id": campaign_id, "name": args["name"],
             "screen_ids": args["screen_ids"],
-            "start_date": args["start_date"],
-            "end_date": args["end_date"],
-            "budget": args["budget"],
-            "status": "draft",
+            "start_date": args["start_date"], "end_date": args["end_date"],
+            "budget": args["budget"], "status": "draft",
             "creative_text": args.get("creative_text", ""),
             "ai_generated": args.get("ai_generated", False),
             "created_at": "2026-05-28T00:00:00",
         }
         MOCK_CAMPAIGNS.append(new_campaign)
         logger.info(f"[A2A] 投放计划已创建: id={campaign_id}, name={args['name']}")
-        return {"content": [{"type": "text",
-                              "text": json.dumps(
-                                  {"campaign_id": campaign_id,
-                                   "status": "draft",
-                                   "message": "投放计划已创建，请提交创意素材后送审"},
-                                  ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(
+                                   {"campaign_id": campaign_id, "status": "draft",
+                                    "message": "投放计划已创建，请提交创意素材后送审"},
+                                   ensure_ascii=False)}]}
 
     # ── Tool 4: 查询投放计划 ──
-    if tool_name == "pdooh_query_campaigns":
+    elif tool_name == "pdooh_query_campaigns":
         results = MOCK_CAMPAIGNS.copy()
         if args.get("status"):
             results = [c for c in results if c["status"] == args["status"]]
-        return {"content": [{"type": "text",
-                              "text": json.dumps(results, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(results, ensure_ascii=False)}]}
 
     # ── Tool 5: 提交创意 ──
-    if tool_name == "pdooh_submit_creative":
+    elif tool_name == "pdooh_submit_creative":
         campaign_id = args["campaign_id"]
         campaign = next((c for c in MOCK_CAMPAIGNS
                          if c["id"] == campaign_id), None)
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
-        # 模拟合规审核
         review_result = {
             "campaign_id": campaign_id,
             "creative_status": "under_review",
             "estimated_review_time_hours": 2,
             "message": "创意已提交，预计 2 小时内完成合规审核"
         }
-        return {"content": [{"type": "text",
-                              "text": json.dumps(review_result, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(review_result, ensure_ascii=False)}]}
 
     # ── Tool 6: 查询报告 ──
-    if tool_name == "pdooh_query_report":
-        # 模拟报告数据
+    elif tool_name == "pdooh_query_report":
         report = {
             "campaign_id": args.get("campaign_id"),
             "period": f"{args.get('start_date', 'N/A')} ~ {args.get('end_date', 'N/A')}",
             "metrics": {
-                "impressions": 126800,
-                "door_open_conversions": 3840,  # 开门转化（IoT 数据）
-                "ctr": "3.03%",
-                "estimated_roi": "1:4.2",
+                "impressions": 126800, "door_open_conversions": 3840,
+                "ctr": "3.03%", "estimated_roi": "1:4.2",
                 "top_screen": "猎德花园广告屏（转化率最高）",
             },
             "note": "报告数据为模拟值，真实数据需接入XX开门行动数据"
         }
-        return {"content": [{"type": "text",
-                              "text": json.dumps(report, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(report, ensure_ascii=False)}]}
 
     # ── Tool 7: 合规预审 ──
-    if tool_name == "pdooh_compliance_check":
+    elif tool_name == "pdooh_compliance_check":
         content = args.get("content", "")
         industry = args.get("industry", "")
-        # 模拟 AI 合规审核
         blocked_keywords = {
             "医疗": ["治愈", "疗效", "第一"],
             "金融": ["保本", "无风险", "稳赚"],
-            "白酒": [],  # 白酒相对宽松
+            "白酒": [],
         }
         issues = []
         for ind, kws in blocked_keywords.items():
@@ -341,27 +330,21 @@ async def mcp_tools_call(body: ToolCallRequest, request: Request):
                     if kw in content:
                         issues.append(f"[{ind}] 禁用词：「{kw}」")
         passed = len(issues) == 0
-        result = {
-            "passed": passed,
-            "issues": issues,
+        compliance_result = {
+            "passed": passed, "issues": issues,
             "suggestion": "修改后重新提交" if not passed else "可以投放",
             "reviewer": "AI-Compliance-v1.0",
         }
-        return {"content": [{"type": "text",
-                              "text": json.dumps(result, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(compliance_result, ensure_ascii=False)}]}
 
     # ── Tool 8: AI 人群洞察 ──
-    if tool_name == "pdooh_audience_insight":
+    elif tool_name == "pdooh_audience_insight":
         product_desc = args.get("product_desc", "")
         target_city = args.get("target_city", "广州")
-
-        # 模拟 AI 洞察（实际应调用 LLM）
         insight = {
-            "product_desc": product_desc,
-            "target_city": target_city,
-            "matched_tags": [],
-            "recommended_screens": [],
-            "budget_suggestion": "",
+            "product_desc": product_desc, "target_city": target_city,
+            "matched_tags": [], "recommended_screens": [], "budget_suggestion": "",
         }
         if "白酒" in product_desc:
             insight["matched_tags"] = ["高端白酒", "高净值人群"]
@@ -376,16 +359,34 @@ async def mcp_tools_call(body: ToolCallRequest, request: Request):
         else:
             insight["recommended_screens"] = MOCK_SCREENS
             insight["budget_suggestion"] = "建议预算 ≥ 2万/月"
-
         insight["summary"] = (
             f"「{product_desc}」目标人群与 "
             f"{len(insight['recommended_screens'])} 块屏匹配，"
             f"{insight['budget_suggestion']}"
         )
-        return {"content": [{"type": "text",
-                              "text": json.dumps(insight, ensure_ascii=False)}]}
+        result = {"content": [{"type": "text",
+                               "text": json.dumps(insight, ensure_ascii=False)}]}
 
-    raise HTTPException(status_code=404, detail=f"Tool not found: {tool_name}")
+    else:
+        raise HTTPException(status_code=404, detail=f"Tool not found: {tool_name}")
+
+    # 📚 自动归档到知识库（每次 MCP 调用结果）
+    try:
+        client_ip = request.client.host if request.client else ""
+        user_agent = request.headers.get("user-agent", "")
+        kb_info = auto_store_mcp_result(
+            tool_name=tool_name,
+            arguments=args,
+            result=result,
+            source="mcp_call",
+            ip=client_ip,
+            user_agent=user_agent,
+        )
+        logger.info(f"[Knowledge Base] 已归档: {kb_info}")
+    except Exception as e:
+        logger.warning(f"[Knowledge Base] 归档失败: {e}")
+
+    return result
 
 
 # ─────────────────────────────────────────────

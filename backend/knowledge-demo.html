@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIAdPlacer MCP 知识库 & 调用日志</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0f1923; color: #e0e6ed; }
+        .header { background: linear-gradient(135deg, #1a2a4a 0%, #2d1b69 100%); padding: 20px 32px; border-bottom: 1px solid #2a3a5a; }
+        .header h1 { font-size: 22px; background: linear-gradient(90deg, #4facfe, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+        .header p { color: #8899aa; font-size: 13px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+        .tab { padding: 10px 24px; background: #1a2535; border: 1px solid #2a3a5a; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; color: #8899aa; transition: all 0.2s; }
+        .tab:hover { background: #223344; }
+        .tab.active { background: #1e3a5f; color: #4facfe; border-color: #4facfe; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: #1a2535; border: 1px solid #2a3a5a; border-radius: 10px; padding: 16px; }
+        .stat-card .label { font-size: 11px; color: #667788; text-transform: uppercase; margin-bottom: 6px; }
+        .stat-card .value { font-size: 26px; font-weight: 700; color: #4facfe; }
+
+        /* Search */
+        .search-bar { background: #1a2535; border: 1px solid #2a3a5a; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .search-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+        .search-grid input, .search-grid select { padding: 9px 12px; background: #0f1923; border: 1px solid #2a3a5a; border-radius: 6px; color: #e0e6ed; font-size: 13px; }
+        .search-grid label { font-size: 11px; color: #667788; display: block; margin-bottom: 4px; }
+        .search-btn { padding: 9px 20px; background: linear-gradient(135deg, #4facfe, #00f2fe); color: #0f1923; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700; }
+        .search-btn:hover { opacity: 0.9; }
+
+        /* Layout */
+        .main-content { display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+        .sidebar { background: #1a2535; border: 1px solid #2a3a5a; border-radius: 10px; padding: 14px; height: fit-content; }
+        .sidebar h3 { font-size: 11px; color: #667788; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .sidebar-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.15s; margin-bottom: 3px; color: #8899aa; }
+        .sidebar-item:hover { background: #223344; color: #e0e6ed; }
+        .sidebar-item.active { background: #1e3a5f; color: #4facfe; }
+
+        .content-area { background: #1a2535; border: 1px solid #2a3a5a; border-radius: 10px; padding: 20px; min-height: 500px; }
+        .content-area h2 { font-size: 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #2a3a5a; color: #4facfe; }
+
+        /* Call Log Cards */
+        .log-card { border: 1px solid #2a3a5a; border-radius: 8px; padding: 14px; margin-bottom: 10px; transition: all 0.2s; }
+        .log-card:hover { border-color: #4facfe; box-shadow: 0 0 12px rgba(79,172,254,0.15); }
+        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .log-tool { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #0f1923; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .log-time { color: #667788; font-size: 11px; }
+        .log-args { font-size: 12px; color: #99aabb; margin-bottom: 6px; }
+        .log-summary { font-size: 12px; color: #aabbcc; padding: 8px; background: #0f1923; border-radius: 6px; line-height: 1.5; }
+        .log-meta { display: flex; gap: 12px; font-size: 10px; color: #556677; margin-top: 8px; }
+        .log-id { font-family: monospace; color: #4facfe; }
+        .tag { display: inline-block; background: #223344; color: #8899aa; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-right: 4px; }
+
+        /* Knowledge Cards */
+        .k-card { border: 1px solid #2a3a5a; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+        .k-card:hover { border-color: #4facfe; }
+
+        .empty { text-align: center; padding: 60px 20px; color: #556677; }
+        .empty .icon { font-size: 40px; margin-bottom: 12px; }
+        .loading { text-align: center; padding: 30px; color: #556677; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+        .page-btn { padding: 6px 14px; background: #1a2535; border: 1px solid #2a3a5a; border-radius: 6px; color: #8899aa; cursor: pointer; font-size: 12px; }
+        .page-btn:hover { background: #223344; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-btn.active { background: #1e3a5f; color: #4facfe; border-color: #4facfe; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; }
+        .modal-overlay.show { display: flex; align-items: center; justify-content: center; }
+        .modal { background: #1a2535; border: 1px solid #2a3a5a; border-radius: 12px; padding: 24px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal h3 { font-size: 16px; color: #4facfe; margin-bottom: 16px; }
+        .modal pre { background: #0f1923; padding: 16px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: #aabbcc; line-height: 1.6; }
+        .modal-close { float: right; background: none; border: none; color: #8899aa; font-size: 20px; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+            .search-grid { grid-template-columns: 1fr; }
+            .main-content { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 MCP 知识库 & 调用日志</h1>
+        <p>自动归档所有 MCP 调用结果｜按日期/工具/城市分类存储｜支持全文检索与颗粒对齐回顾</p>
+    </div>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('logs')">📋 调用日志</div>
+            <div class="tab" onclick="switchTab('knowledge')">🗃️ 知识库</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="label">总调用次数</div>
+                <div class="value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">工具种类</div>
+                <div class="value" id="statTools">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">知识库记录</div>
+                <div class="value" id="statKB">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">数据天数</div>
+                <div class="value" id="statDays">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">最近更新</div>
+                <div class="value" id="statUpdated" style="font-size:14px;">-</div>
+            </div>
+        </div>
+
+        <!-- ═══ Tab 1: 调用日志 ═══ -->
+        <div class="tab-content active" id="tab-logs">
+            <div class="search-bar">
+                <div class="search-grid">
+                    <div>
+                        <label>工具名</label>
+                        <select id="logTool"><option value="">全部工具</option></select>
+                    </div>
+                    <div>
+                        <label>日期从</label>
+                        <input type="date" id="logDateFrom">
+                    </div>
+                    <div>
+                        <label>日期到</label>
+                        <input type="date" id="logDateTo">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <input type="text" id="logSearch" placeholder="关键词搜索...">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button class="search-btn" onclick="loadLogs()">🔍 搜索</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <h2>📋 调用日志 <span id="logCount" style="font-size:13px;color:#667788;"></span></h2>
+                <div id="logArea"><div class="loading">加载中...</div></div>
+                <div class="pagination" id="logPagination"></div>
+            </div>
+        </div>
+
+        <!-- ═══ Tab 2: 知识库 ═══ -->
+        <div class="tab-content" id="tab-knowledge">
+            <div class="search-bar">
+                <div class="search-grid">
+                    <div>
+                        <label>工具名</label>
+                        <select id="kbTool"><option value="">全部工具</option></select>
+                    </div>
+                    <div>
+                        <label>城市</label>
+                        <input type="text" id="kbCity" placeholder="如：广州">
+                    </div>
+                    <div>
+                        <label>日期范围</label>
+                        <input type="date" id="kbDateFrom">
+                    </div>
+                    <div>
+                        <label>关键词</label>
+                        <input type="text" id="kbKeyword" placeholder="搜索参数/结果">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button class="search-btn" onclick="doKbSearch()">🔍 搜索</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="sidebar">
+                    <h3>📅 按日期</h3>
+                    <div id="dateList"><div class="loading">...</div></div>
+                    <h3 style="margin-top:16px;">🛠️ 按工具</h3>
+                    <div id="toolList"><div class="loading">...</div></div>
+                </div>
+                <div class="content-area">
+                    <h2 id="kbTitle">🗃️ 知识库 <span id="kbCount" style="font-size:13px;color:#667788;"></span></h2>
+                    <div id="kbArea"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle">调用详情</h3>
+            <pre id="modalContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:5002/api/v2/knowledge';
+        let allTools = [];
+        let logPage = 1;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            if (tab === 'logs') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('tab-logs').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('tab-knowledge').classList.add('active');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API}/stats`);
+                const data = await res.json();
+                document.getElementById('statTotal').textContent = data.total_records || 0;
+                document.getElementById('statTools').textContent = Object.keys(data.by_tool || {}).length;
+                document.getElementById('statKB').textContent = data.total_records || 0;
+                document.getElementById('statDays').textContent = Object.keys(data.by_date || {}).length;
+                if (data.last_updated) {
+                    document.getElementById('statUpdated').textContent = new Date(data.last_updated).toLocaleDateString('zh-CN');
+                }
+            } catch(e) {
+                document.getElementById('statTotal').textContent = '-';
+            }
+        }
+
+        // ═══ 调用日志 ═══
+        async function loadLogs() {
+            const tool = document.getElementById('logTool').value;
+            const dateFrom = document.getElementById('logDateFrom').value;
+            const dateTo = document.getElementById('logDateTo').value;
+            const params = new URLSearchParams();
+            if (tool) params.set('tool_name', tool);
+            if (dateFrom) params.set('date_from', dateFrom);
+            if (dateTo) params.set('date_to', dateTo);
+            params.set('page', logPage);
+            params.set('page_size', '20');
+
+            try {
+                const res = await fetch(`${API}/logs?${params}`);
+                const data = await res.json();
+                document.getElementById('logCount').textContent = `共 ${data.total} 条`;
+                renderLogs(data.logs || []);
+                renderPagination(data);
+            } catch(e) {
+                document.getElementById('logArea').innerHTML = '<div class="empty"><div class="icon">⚠️</div><div>加载失败，请确认后端已启动</div></div>';
+            }
+        }
+
+        function renderLogs(logs) {
+            const area = document.getElementById('logArea');
+            if (logs.length === 0) {
+                area.innerHTML = '<div class="empty"><div class="icon">📭</div><div>暂无调用记录</div></div>';
+                return;
+            }
+            area.innerHTML = logs.map(l => {
+                const args = l.arguments || {};
+                const argsStr = Object.entries(args).map(([k,v]) =>
+                    `<span class="tag">${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}</span>`
+                ).join('');
+                const ts = l.timestamp ? new Date(l.timestamp).toLocaleString('zh-CN') : '-';
+                return `
+                    <div class="log-card">
+                        <div class="log-header">
+                            <span class="log-tool">${l.tool || '-'}</span>
+                            <span class="log-time">📅 ${ts}</span>
+                        </div>
+                        <div class="log-args">${argsStr || '<span style="color:#445566;">无参数</span>'}</div>
+                        <div class="log-summary">${l.result_summary || '-'}</div>
+                        <div class="log-meta">
+                            <span class="log-id">🆔 ${l.id}</span>
+                            <span>📅 ${l.date}</span>
+                            <span>📡 ${l.source || 'mcp'}</span>
+                            <span>🌐 ${l.ip || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPagination(data) {
+            const container = document.getElementById('logPagination');
+            if (data.total_pages <= 1) { container.innerHTML = ''; return; }
+            let html = `<button class="page-btn" onclick="goLogPage(${data.page - 1})" ${data.page <= 1 ? 'disabled' : ''}>上一页</button>`;
+            for (let i = 1; i <= Math.min(data.total_pages, 5); i++) {
+                html += `<button class="page-btn ${i === data.page ? 'active' : ''}" onclick="goLogPage(${i})">${i}</button>`;
+            }
+            html += `<button class="page-btn" onclick="goLogPage(${data.page + 1})" ${data.page >= data.total_pages ? 'disabled' : ''}>下一页</button>`;
+            container.innerHTML = html;
+        }
+
+        function goLogPage(p) {
+            if (p < 1) return;
+            logPage = p;
+            loadLogs();
+        }
+
+        // ═══ 知识库 ═══
+        async function loadDates() {
+            try {
+                const res = await fetch(`${API}/dates`);
+                const data = await res.json();
+                const container = document.getElementById('dateList');
+                if (!data.dates?.length) { container.innerHTML = '<div style="color:#445566;font-size:12px;">暂无数据</div>'; return; }
+                container.innerHTML = data.dates.map(d => `<div class="sidebar-item" onclick="loadKbByDate('${d}')">${d}</div>`).join('');
+            } catch(e) {
+                document.getElementById('dateList').innerHTML = '<div style="color:#445566;font-size:12px;">加载失败</div>';
+            }
+        }
+
+        async function loadTools() {
+            try {
+                const res = await fetch(`${API}/tools`);
+                const data = await res.json();
+                allTools = data.tools || [];
+                document.getElementById('toolList').innerHTML = allTools.map(t =>
+                    `<div class="sidebar-item" onclick="loadKbByTool('${t}')">${t}</div>`
+                ).join('');
+                const sel = document.getElementById('kbTool');
+                const logSel = document.getElementById('logTool');
+                allTools.forEach(t => {
+                    [sel, logSel].forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = t; opt.textContent = t;
+                        s.appendChild(opt);
+                    });
+                });
+            } catch(e) {}
+        }
+
+        function renderKb(records, title) {
+            const area = document.getElementById('kbArea');
+            document.getElementById('kbCount').textContent = `共 ${records.length} 条`;
+            if (title) document.getElementById('kbTitle').textContent = title;
+            if (!records.length) {
+                area.innerHTML = '<div class="empty"><div class="icon">📭</div><div>暂无记录</div></div>';
+                return;
+            }
+            area.innerHTML = records.map(r => {
+                const args = r.arguments || r.meta?.arguments || {};
+                const argsStr = Object.entries(args).map(([k,v]) =>
+                    `<span class="tag">${k}: ${v}</span>`
+                ).join('');
+                const date = r.meta?.date || r.date || '-';
+                const tool = r.tool || r.meta?.tool || '-';
+                return `
+                    <div class="k-card">
+                        <div class="log-header">
+                            <span class="log-tool">${tool}</span>
+                            <span class="log-time">📅 ${date}</span>
+                        </div>
+                        <div class="log-args">${argsStr || '<span style="color:#445566;">无参数</span>'}</div>
+                        <div class="log-meta"><span class="log-id">🆔 ${r.id || '-'}</span></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function doKbSearch() {
+            const tool = document.getElementById('kbTool').value;
+            const city = document.getElementById('kbCity').value;
+            const dateFrom = document.getElementById('kbDateFrom').value;
+            const keyword = document.getElementById('kbKeyword').value;
+            const params = new URLSearchParams();
+            if (tool) params.set('tool_name', tool);
+            if (city) params.set('city', city);
+            if (dateFrom) params.set('date_from', dateFrom);
+            if (keyword) params.set('keyword', keyword);
+            params.set('limit', '100');
+            try {
+                const res = await fetch(`${API}/knowledge/search?${params}`);
+                const data = await res.json();
+                renderKb(data.records || [], `🔍 搜索结果`);
+            } catch(e) { alert('搜索失败'); }
+        }
+
+        async function loadKbByDate(dateStr) {
+            try {
+                const res = await fetch(`${API}/knowledge/date/${dateStr}?limit=100`);
+                const data = await res.json();
+                renderKb(data.records || [], `📅 ${dateStr}`);
+            } catch(e) { alert('加载失败'); }
+        }
+
+        async function loadKbByTool(toolName) {
+            try {
+                const res = await fetch(`${API}/knowledge/tool/${toolName}?limit=100`);
+                const data = await res.json();
+                renderKb(data.records || [], `🛠️ ${toolName}`);
+            } catch(e) { alert('加载失败'); }
+        }
+
+        function closeModal(e) {
+            if (!e || e.target === document.getElementById('modalOverlay')) {
+                document.getElementById('modalOverlay').classList.remove('show');
+            }
+        }
+
+        function showDetail(logId) {
+            fetch(`${API}/logs/${logId}`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('modalTitle').textContent = `调用详情 — ${data.tool || logId}`;
+                    document.getElementById('modalContent').textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('modalOverlay').classList.add('show');
+                });
+        }
+
+        // Init
+        loadStats();
+        loadDates();
+        loadTools();
+        loadLogs();
+    </script>
+</body>
+</html>

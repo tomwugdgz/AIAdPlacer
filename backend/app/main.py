@@ -20,6 +20,7 @@ from app.pdooh_mcp import router as pdooh_mcp_router
 from app.bus.api import router as bus_router
 from app.api.optimization_routes import router as optimization_router
 from app.api.dashboard_routes import router as dashboard_router
+from app.api.knowledge_routes import router as knowledge_router
 from app.config import settings
 
 app = FastAPI(
@@ -54,6 +55,8 @@ app.include_router(pdooh_mcp_router)
 app.include_router(optimization_router, prefix="/api/v2/optimization")
 # 效果归因看板
 app.include_router(dashboard_router, prefix="/api/v2/dashboard")
+# MCP 知识库管理
+app.include_router(knowledge_router, prefix="/api/v2/knowledge")
 
 @app.on_event("startup")
 async def startup():
@@ -67,3 +70,5 @@ async def startup():
     print(f"📅 AI排期优化: http://127.0.0.1:5002/api/v2/optimization/scheduling/generate")
     print(f"🔍 竞品监控: http://127.0.0.1:5002/api/v2/optimization/competitor/report")
     print(f"📈 效果看板: http://127.0.0.1:5002/api/v2/dashboard/overview")
+    print(f"📚 MCP知识库: http://127.0.0.1:5002/api/v2/knowledge/logs")
+    print(f"🗃️  知识库调用日志: http://127.0.0.1:5002/api/v2/knowledge/stats")
