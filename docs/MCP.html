@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AIAdPlacer MCP 接口文档 · v2.0</title>
+<style>
+  :root{
+    --bg:#0a0d1a; --bg2:#11162a; --panel:#161c35; --line:#22305c;
+    --ink:#e7ecff; --ink2:#aab3d6; --ink3:#7a85b3;
+    --acc:#7c5cff; --acc2:#22d3ee; --ok:#10b981; --warn:#f59e0b; --err:#ef4444;
+    --grad:linear-gradient(135deg,#7c5cff 0%,#22d3ee 100%);
+    --code-bg:#0b0f22; --code-line:#1b2347;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:14px/1.65 -apple-system,"PingFang SC","Microsoft Yahei",system-ui,sans-serif}
+  a{color:var(--acc2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre{font-family:"JetBrains Mono",Menlo,Consolas,monospace}
+  /* layout */
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 28px 96px}
+  header.hero{
+    position:relative;padding:48px 36px;border-radius:18px;overflow:hidden;
+    background:radial-gradient(1200px 400px at 10% 0%,rgba(124,92,255,.18),transparent 60%),
+               radial-gradient(1000px 380px at 100% 100%,rgba(34,211,238,.16),transparent 60%),
+               linear-gradient(180deg,#11162a 0%,#0a0d1a 100%);
+    border:1px solid var(--line);
+  }
+  header.hero h1{
+    margin:0 0 8px;font-size:34px;letter-spacing:.5px;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  header.hero .sub{color:var(--ink2);font-size:14px}
+  header.hero .badges{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.35);color:#cdb9ff;font-size:12px}
+  .badge.cyan{background:rgba(34,211,238,.10);border-color:rgba(34,211,238,.35);color:#9ce8f5}
+  .badge.green{background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.35);color:#86efac}
+  /* grid */
+  .layout{display:grid;grid-template-columns:240px 1fr;gap:28px;margin-top:28px}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  nav.toc{position:sticky;top:24px;align-self:start;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:16px 14px;max-height:calc(100vh - 48px);overflow:auto}
+  nav.toc h3{margin:0 0 10px;font-size:12px;letter-spacing:2px;color:var(--ink3);text-transform:uppercase}
+  nav.toc a{display:block;padding:6px 8px;border-radius:8px;color:var(--ink2);font-size:13px}
+  nav.toc a:hover{background:rgba(124,92,255,.10);color:var(--ink);text-decoration:none}
+  nav.toc a.sub{padding-left:22px;font-size:12px;color:var(--ink3)}
+  main{min-width:0}
+  section.block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:22px}
+  section.block h2{margin:0 0 14px;font-size:22px;display:flex;align-items:center;gap:10px}
+  section.block h2::before{content:"";width:6px;height:22px;border-radius:3px;background:var(--grad)}
+  section.block h3{margin:22px 0 10px;font-size:16px;color:#cdb9ff}
+  section.block p{color:var(--ink2);margin:8px 0}
+  /* table */
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:rgba(124,92,255,.08);color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  td code{background:var(--code-bg);padding:1px 6px;border-radius:4px;color:#9ce8f5;font-size:12px}
+  /* code */
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+    overflow:auto;line-height:1.55;font-size:12.5px;color:#d6deff}
+  pre code{color:#d6deff}
+  .tok-kw{color:#c084fc} .tok-str{color:#86efac} .tok-num{color:#fbbf24} .tok-com{color:#64748b;font-style:italic}
+  /* tool card */
+  .tool{background:#0f1428;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .tool .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .tool .name{font-family:"JetBrains Mono",monospace;font-size:15px;color:#9ce8f5;font-weight:600}
+  .tool .tag{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:.4px}
+  .tag.媒体{background:rgba(34,211,238,.12);color:#9ce8f5;border:1px solid rgba(34,211,238,.35)}
+  .tag.投放{background:rgba(124,92,255,.14);color:#cdb9ff;border:1px solid rgba(124,92,255,.4)}
+  .tag.客户{background:rgba(16,185,129,.12);color:#86efac;border:1px solid rgba(16,185,129,.35)}
+  .tool .desc{color:var(--ink2);font-size:13.5px;margin:6px 0 12px}
+  .tool .req{color:var(--warn);font-size:12px}
+  /* callout */
+  .call{border-left:3px solid var(--acc);background:rgba(124,92,255,.07);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;color:var(--ink2);font-size:13px}
+  .call.warn{border-left-color:var(--warn);background:rgba(245,158,11,.07)}
+  .call.err{border-left-color:var(--err);background:rgba(239,68,68,.07)}
+  .call.ok{border-left-color:var(--ok);background:rgba(16,185,129,.07)}
+  /* search */
+  .search{margin-bottom:14px}
+  .search input{width:100%;padding:9px 12px;background:var(--bg2);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;font-size:13px;outline:none}
+  .search input:focus{border-color:var(--acc)}
+  /* footer */
+  footer{color:var(--ink3);font-size:12px;text-align:center;padding:24px 0 0}
+  /* details */
+  details{background:#0f1428;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+  details>summary{cursor:pointer;color:var(--ink);font-weight:600;list-style:none}
+  details>summary::before{content:"▸ ";color:var(--acc2)}
+  details[open]>summary::before{content:"▾ "}
+  details[open]>:not(summary){margin-top:10px}
+  /* flow */
+  .flow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .step{flex:1;min-width:140px;background:#0f1428;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .step .n{font-size:11px;color:var(--ink3);letter-spacing:1px}
+  .step .t{font-size:13.5px;color:#cdb9ff;font-weight:600;margin-top:2px}
+  .arr{color:var(--acc2);font-size:18px;align-self:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>AIAdPlacer MCP 接口文档</h1>
+  <div class="sub">v2.0 · 2026-06-09 实拉 · 19 个 MCP 工具 · 140,000+ 媒体资源</div>
+  <div class="badges">
+    <span class="badge">FastAPI + PostgreSQL</span>
+    <span class="badge cyan">MCP / A2A</span>
+    <span class="badge green">健康 200 / 19 tools</span>
+    <span class="badge">秦岭科技 5V 数据模型</span>
+    <span class="badge cyan">"亲邻" → "XX科技"</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <h3>目录</h3>
+    <a href="#protocol">一、统一调用协议</a>
+    <a href="#speed">二、19 工具速查</a>
+    <a href="#schemas">三、完整 Schema</a>
+    <a class="sub" href="#g-screen">智能屏 / 道闸 / 单元门</a>
+    <a class="sub" href="#g-led">LED / 电梯 / 梯影 / 门禁</a>
+    <a class="sub" href="#g-city">城市索引 / 汇总 / L9 / 丰田</a>
+    <a class="sub" href="#g-customer">客户通讯录</a>
+    <a class="sub" href="#g-campaign">投放管理 8 工具</a>
+    <a href="#samples">四、实拉返回样例</a>
+    <a href="#chains">五、Agent 调用链</a>
+    <a href="#deploy">六、部署与接入</a>
+  </nav>
+
+  <main>
+    <section class="block" id="protocol">
+      <h2>一、统一调用协议</h2>
+      <p>所有工具走标准 MCP JSON-RPC 风格（轻量化实现），无会话、无握手。</p>
+      <h3>1.1 健康检查</h3>
+<pre><code>GET http://47.253.159.62:5002/api/v2/mcp/pdooh/health
+→ <span class="tok-str">{"service":"pDOOH A2A MCP Server","status":"ok","tools_count":19,
+   "mcp_endpoint":"/api/v2/mcp/pdooh/tools/call"}</span></code></pre>
+
+      <h3>1.2 工具发现</h3>
+<pre><code>GET /api/v2/mcp/pdooh/tools/list
+→ { "tools": [ {name, description, inputSchema}, ... ] }   <span class="tok-com">// 19 项</span></code></pre>
+
+      <h3>1.3 工具调用</h3>
+<pre><code>POST /api/v2/mcp/pdooh/tools/call
+Headers: X-API-Key: pdooh-agent-key-2026
+        Content-Type: application/json
+Body:
+{
+  "name": "pdooh_query_screens",
+  "arguments": { "city": "广州", "min_house_price": 8, "limit": 10 }
+}
+
+Response (MCP content[] 包装):
+{
+  "content": [
+    { "type": "text",
+      "text": "[{\"id\":1,\"name\":\"天河城社区门禁屏\",...}]" }
+  ]
+}</code></pre>
+      <div class="call warn">⚠️ <code>content[0].text</code> 永远是<strong>字符串化的 JSON</strong>，调用方需要 <code>JSON.parse(text)</code> 才能取数据。</div>
+
+      <h3>1.4 错误码（实测）</h3>
+      <table>
+        <tr><th>场景</th><th>HTTP</th><th>触发</th><th>现象</th></tr>
+        <tr><td>工具名拼错</td><td>400</td><td><code>name</code> 错误</td><td><code>tool_not_found</code></td></tr>
+        <tr><td>必填参数缺失</td><td>422</td><td><code>required</code> 未传</td><td>Pydantic ValidationError</td></tr>
+        <tr><td>数据表未迁移</td><td>500</td><td>空参查询某些表</td><td>Internal Server Error（<code>pdooh_query_elevator_frames</code> / <code>pdooh_get_screen_audience</code>）</td></tr>
+        <tr><td>服务未启动</td><td>—</td><td>5002 端口 down</td><td>connection refused</td></tr>
+      </table>
+    </section>
+
+    <section class="block" id="speed">
+      <h2>二、19 工具速查</h2>
+      <table>
+        <tr><th>#</th><th>工具名</th><th>分类</th><th>一句话功能</th><th>必填参</th></tr>
+        <tr><td>1</td><td><code>pdooh_query_screens</code></td><td>媒体</td><td>智能屏查询（地理/标签/房价）</td><td>—</td></tr>
+        <tr><td>2</td><td><code>pdooh_get_screen_audience</code></td><td>媒体</td><td>单屏人群画像</td><td><code>screen_id</code></td></tr>
+        <tr><td>3</td><td><code>pdooh_create_campaign</code></td><td>投放</td><td>创建投放计划</td><td><code>name,screen_ids,start_date,end_date,budget</code></td></tr>
+        <tr><td>4</td><td><code>pdooh_query_campaigns</code></td><td>投放</td><td>计划列表（按状态）</td><td>—</td></tr>
+        <tr><td>5</td><td><code>pdooh_submit_creative</code></td><td>投放</td><td>提交创意</td><td><code>campaign_id,creative_type</code></td></tr>
+        <tr><td>6</td><td><code>pdooh_query_report</code></td><td>投放</td><td>效果报告</td><td>—</td></tr>
+        <tr><td>7</td><td><code>pdooh_compliance_check</code></td><td>投放</td><td>合规预审</td><td><code>content</code></td></tr>
+        <tr><td>8</td><td><code>pdooh_audience_insight</code></td><td>投放</td><td>AI 人群洞察</td><td><code>product_desc</code></td></tr>
+        <tr><td>9</td><td><code>pdooh_query_daocha_points</code></td><td>媒体</td><td>广州道闸点位</td><td>—</td></tr>
+        <tr><td>10</td><td><code>pdooh_query_smart_frames</code></td><td>媒体</td><td>单元门智能框架</td><td>—</td></tr>
+        <tr><td>11</td><td><code>pdooh_query_led_points</code></td><td>媒体</td><td>商场 LED</td><td>—</td></tr>
+        <tr><td>12</td><td><code>pdooh_query_elevator_frames</code></td><td>媒体</td><td>电梯框架</td><td>—</td></tr>
+        <tr><td>13</td><td><code>pdooh_query_shadow_points</code></td><td>媒体</td><td>梯影点位</td><td>—</td></tr>
+        <tr><td>14</td><td><code>pdooh_query_access_points</code></td><td>媒体</td><td>门禁点位</td><td>—</td></tr>
+        <tr><td>15</td><td><code>pdooh_query_city_resources</code></td><td>媒体</td><td>城市资源索引</td><td>—</td></tr>
+        <tr><td>16</td><td><code>pdooh_query_city_summary</code></td><td>媒体</td><td>城市资源汇总</td><td>—</td></tr>
+        <tr><td>17</td><td><code>pdooh_query_customers</code></td><td>客户</td><td>客户通讯录</td><td>—</td></tr>
+        <tr><td>18</td><td><code>pdooh_query_l9_screens</code></td><td>媒体</td><td>智能屏 L9</td><td>—</td></tr>
+        <tr><td>19</td><td><code>pdooh_query_gtmc_media</code></td><td>媒体</td><td>广汽丰田媒体库</td><td>—</td></tr>
+      </table>
+    </section>
+
+    <section class="block" id="schemas">
+      <h2>三、完整 inputSchema</h2>
+      <div class="search"><input id="filter" placeholder="🔍 搜索工具名 / 参数 / 描述..." /></div>
+
+      <h3 id="g-screen">3.1 智能屏 / 道闸 / 单元门</h3>
+
+      <div class="tool" data-name="pdooh_query_screens">
+        <div class="head"><span class="name">pdooh_query_screens</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询符合条件的智能屏（地理位置 / 人群标签 / 社区属性）。返回屏ID、地址、经纬度、覆盖人群画像。</div>
+        <table>
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>city</code></td><td>string</td><td>城市，如 <code>广州</code></td></tr>
+          <tr><td><code>district</code></td><td>string</td><td>区县，如 <code>天河区</code></td></tr>
+          <tr><td><code>lat</code>/<code>lng</code>/<code>radius</code></td><td>number</td><td>经纬度 + 米（默认 3000）</td></tr>
+          <tr><td><code>tags</code></td><td>string[]</td><td>人群标签，如 <code>["高端白酒","母婴"]</code></td></tr>
+          <tr><td><code>min_house_price</code></td><td>number</td><td>最低房价（万）</td></tr>
+          <tr><td><code>limit</code></td><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_daocha_points">
+        <div class="head"><span class="name">pdooh_query_daocha_points</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询广州道闸广告点位，支持区域、商圈、车流量筛选。返回点位ID、社区名、地址、日均车流量等。</div>
+        <table>
+          <tr><th><code>district</code></th><td>string</td><td>行政区，如 <code>天河区</code></td></tr>
+          <tr><th><code>business_zone</code></th><td>string</td><td>商圈，如 <code>珠江新城商圈</code></td></tr>
+          <tr><th><code>min_car_traffic</code></th><td>int</td><td>最低日均车流量</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_smart_frames">
+        <div class="head"><span class="name">pdooh_query_smart_frames</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询单元门智能框架点位，支持城市、区域、价格筛选。返回楼盘名、地址、均价、媒体面数。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州市</code>、<code>深圳市</code>、<code>成都市</code></td></tr>
+          <tr><th><code>district</code></th><td>string</td><td>如 <code>天河区</code></td></tr>
+          <tr><th><code>min_price</code></th><td>int</td><td>最低楼盘价格（元/㎡）</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <h3 id="g-led">3.2 LED / 电梯 / 梯影 / 门禁</h3>
+
+      <div class="tool" data-name="pdooh_query_led_points">
+        <div class="head"><span class="name">pdooh_query_led_points</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询商场LED点位，支持城市、区域、场景筛选。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>北京</code>、<code>上海</code></td></tr>
+          <tr><th><code>district</code></th><td>string</td><td>行政区</td></tr>
+          <tr><th><code>scene</code></th><td>string</td><td>购物中心 / 写字楼</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_elevator_frames">
+        <div class="head"><span class="name">pdooh_query_elevator_frames</span><span class="tag 媒体">媒体</span><span class="req">⚠️ 空参会 500</span></div>
+        <div class="desc">查询电梯框架点位，支持城市、区域、租价筛选。返回楼宇名、地址、楼层、租价。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州市</code></td></tr>
+          <tr><th><code>district</code></th><td>string</td><td>行政区</td></tr>
+          <tr><th><code>min_price</code></th><td>number</td><td>最低租价（元/周）</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+        <div class="call err">⚠️ 实测：空参调用返回 500 Internal Server Error（疑似后端表未迁移），上线前需补 <code>qinlin_elevator_frame</code> 表或修复路由。</div>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_shadow_points">
+        <div class="head"><span class="name">pdooh_query_shadow_points</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询梯影点位，支持城市、资源类型筛选。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>北京</code>、<code>上海</code></td></tr>
+          <tr><th><code>resource_type</code></th><td>string</td><td>电梯投影 / 楼宇投影</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_access_points">
+        <div class="head"><span class="name">pdooh_query_access_points</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询门禁点位，支持城市、区域、价格筛选。返回楼盘名、地址、均价。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州市</code></td></tr>
+          <tr><th><code>district</code></th><td>string</td><td>如 <code>天河区</code></td></tr>
+          <tr><th><code>min_price</code></th><td>number</td><td>最低楼盘均价（元/㎡）</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <h3 id="g-city">3.3 城市索引 / 汇总 / L9 / 丰田</h3>
+
+      <div class="tool" data-name="pdooh_query_city_resources">
+        <div class="head"><span class="name">pdooh_query_city_resources</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询城市资源索引，查看各城市支持的媒体类型。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州市</code></td></tr>
+          <tr><th><code>media_type</code></th><td>string</td><td>道闸 / 门禁 / LED</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 50</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_city_summary">
+        <div class="head"><span class="name">pdooh_query_city_summary</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">查询城市资源汇总，各城市媒体资源总量统计。返回 <code>{city,total,details:{媒体类型:数量}}</code>。</div>
+        <div class="call ok">无参。返回样例：<code>{"city":"广州市","total":2883,"details":{"门禁":2172,"单元门":711}}</code></div>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_l9_screens">
+        <div class="head"><span class="name">pdooh_query_l9_screens</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">智能屏 L9（27 省 / 100+ 城市），支持城市、省份、价格、楼盘名筛选。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州市</code></td></tr>
+          <tr><th><code>province</code></th><td>string</td><td>如 <code>广东省</code></td></tr>
+          <tr><th><code>min_price</code></th><td>number</td><td>最低楼盘价格（元/㎡）</td></tr>
+          <tr><th><code>site_name</code></th><td>string</td><td>楼盘名关键词</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 50</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_gtmc_media">
+        <div class="head"><span class="name">pdooh_query_gtmc_media</span><span class="tag 媒体">媒体</span></div>
+        <div class="desc">广汽丰田媒体库（专用），支持城市、媒体类型、价格筛选。</div>
+        <table>
+          <tr><th><code>city</code></th><td>string</td><td>如 <code>广州</code></td></tr>
+          <tr><th><code>media_type</code></th><td>string</td><td>电梯海报 / 地铁 / 户外LED / 候车亭 / 高铁</td></tr>
+          <tr><th><code>min_price</code></th><td>number</td><td>最低净价（元）</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 50</td></tr>
+        </table>
+      </div>
+
+      <h3 id="g-customer">3.4 客户数据</h3>
+
+      <div class="tool" data-name="pdooh_query_customers">
+        <div class="head"><span class="name">pdooh_query_customers</span><span class="tag 客户">客户</span></div>
+        <div class="desc">查询客户通讯录（26,895 条），支持品牌、城市、行业、手机号筛选。</div>
+        <table>
+          <tr><th><code>brand</code></th><td>string</td><td>品牌名称关键词</td></tr>
+          <tr><th><code>city</code></th><td>string</td><td>决策城市，如 <code>广州市</code></td></tr>
+          <tr><th><code>industry</code></th><td>string</td><td>汽车 / 食品 / 饮料</td></tr>
+          <tr><th><code>phone</code></th><td>string</td><td>手机号（精确匹配）</td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 50</td></tr>
+        </table>
+        <div class="call warn">⚠️ 返回结构中 <code>data</code> 字段是数据库原始行，<strong>存在字段语义错位</strong>（如"职务"列里实际是手机号），调用方需做清洗。</div>
+      </div>
+
+      <h3 id="g-campaign">3.5 投放管理（8 工具）</h3>
+
+      <div class="tool" data-name="pdooh_get_screen_audience">
+        <div class="head"><span class="name">pdooh_get_screen_audience</span><span class="tag 媒体">媒体</span><span class="req">⚠️ 空参会 500</span></div>
+        <div class="desc">获取指定屏的人群画像（人口属性 / 消费偏好 / 社区属性），用于评估投放匹配度。</div>
+        <table>
+          <tr><th><code>screen_id</code></th><td>int</td><td>必填</td></tr>
+        </table>
+        <div class="call err">⚠️ 实测空参 500；调用方必须传 <code>screen_id</code>。</div>
+      </div>
+
+      <div class="tool" data-name="pdooh_create_campaign">
+        <div class="head"><span class="name">pdooh_create_campaign</span><span class="tag 投放">投放</span></div>
+        <div class="desc">创建 pDOOH 投放计划。AI Agent 可自主调用此工具完成投放下单。</div>
+        <table>
+          <tr><th>字段</th><th>必填</th><th>说明</th></tr>
+          <tr><td><code>name</code></td><td>✅</td><td>投放计划名称</td></tr>
+          <tr><td><code>screen_ids</code></td><td>✅</td><td>int[] 屏 ID 列表</td></tr>
+          <tr><td><code>start_date</code> / <code>end_date</code></td><td>✅</td><td><code>YYYY-MM-DD</code></td></tr>
+          <tr><td><code>budget</code></td><td>✅</td><td>总预算（元）</td></tr>
+          <tr><td><code>creative_text</code></td><td></td><td>广告文案（自动送合规审核）</td></tr>
+          <tr><td><code>ai_generated</code></td><td></td><td>bool，是否 AI 生成创意</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_campaigns">
+        <div class="head"><span class="name">pdooh_query_campaigns</span><span class="tag 投放">投放</span></div>
+        <div class="desc">查询投放计划列表，支持按状态筛选。</div>
+        <table>
+          <tr><th><code>status</code></th><td>enum</td><td><code>draft</code> / <code>reviewing</code> / <code>approved</code> / <code>running</code> / <code>finished</code></td></tr>
+          <tr><th><code>limit</code></th><td>int</td><td>默认 20</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_submit_creative">
+        <div class="head"><span class="name">pdooh_submit_creative</span><span class="tag 投放">投放</span></div>
+        <div class="desc">提交广告创意（AIGC 或人工上传），自动触发合规审核。</div>
+        <table>
+          <tr><th>字段</th><th>必填</th><th>说明</th></tr>
+          <tr><td><code>campaign_id</code></td><td>✅</td><td>投放计划 ID</td></tr>
+          <tr><td><code>creative_type</code></td><td>✅</td><td>enum: <code>image</code> / <code>video</code> / <code>text</code> / <code>aigc</code></td></tr>
+          <tr><td><code>creative_url</code></td><td></td><td>素材 URL（非 aigc 时必填）</td></tr>
+          <tr><td><code>ai_prompt</code></td><td></td><td>AIGC 生成提示词（<code>aigc</code> 时必填）</td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_query_report">
+        <div class="head"><span class="name">pdooh_query_report</span><span class="tag 投放">投放</span></div>
+        <div class="desc">查询投放报告（曝光量 / 开门转化率 / ROI 模拟），支持按屏/按计划维度。</div>
+        <table>
+          <tr><th><code>campaign_id</code></th><td>int</td><td>计划 ID</td></tr>
+          <tr><th><code>screen_id</code></th><td>int</td><td>单独查询某屏</td></tr>
+          <tr><th><code>start_date</code> / <code>end_date</code></th><td>string</td><td><code>YYYY-MM-DD</code></td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_compliance_check">
+        <div class="head"><span class="name">pdooh_compliance_check</span><span class="tag 投放">投放</span></div>
+        <div class="desc">广告内容合规预审（AI 自动审核），检查医疗/金融/药品等受限品类。</div>
+        <table>
+          <tr><th><code>content</code></th><td>string</td><td>✅ 文案或图片描述</td></tr>
+          <tr><th><code>industry</code></th><td>string</td><td>如 <code>医疗</code> / <code>金融</code> / <code>白酒</code></td></tr>
+        </table>
+      </div>
+
+      <div class="tool" data-name="pdooh_audience_insight">
+        <div class="head"><span class="name">pdooh_audience_insight</span><span class="tag 投放">投放</span></div>
+        <div class="desc">AI 人群洞察：输入产品/品牌描述，自动匹配人群标签和推荐屏列表。</div>
+        <table>
+          <tr><th><code>product_desc</code></th><td>string</td><td>✅ 如 <code>高端白酒，目标高净值人群</code></td></tr>
+          <tr><th><code>target_city</code></th><td>string</td><td>目标城市</td></tr>
+          <tr><th><code>budget_hint</code></th><td>number</td><td>预算提示（元）</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="samples">
+      <h2>四、实拉返回样例</h2>
+      <h3>4.1 pdooh_query_screens</h3>
+<pre><code>[
+  {"id":1,"name":"天河城社区门禁屏","city":"广州","district":"天河区",
+   "lat":23.1291,"lng":113.3642,"house_price":8,
+   "tags":["高端白酒","母婴","美妆"],"impressions_per_day":3200}
+]</code></pre>
+      <h3>4.2 pdooh_query_customers</h3>
+<pre><code>[
+  {"id":7553,"data":{"备注":"","座机":"","手机":"","状态":"公海",
+   "职务":"13805771602","行业":"家居建材","部门":"","联系人":"营销总监",
+   "决策城市":"","品牌名称":" ","客户简称":" ","组织机构":""},
+   "phone":"","brand":"","city":"","industry":"家居建材",
+   "created_at":"2026-06-07T23:08:17.143160"}
+]</code></pre>
+      <h3>4.3 pdooh_compliance_check</h3>
+<pre><code>{"passed":true,"issues":[],"suggestion":"可以投放","reviewer":"AI-Compliance-v1.0"}</code></pre>
+      <h3>4.4 pdooh_audience_insight</h3>
+<pre><code>{"product_desc":"","target_city":"广州","matched_tags":[],
+ "recommended_screens":[{"id":1,"name":"天河城社区门禁屏",...}]}</code></pre>
+      <h3>4.5 pdooh_query_city_summary</h3>
+<pre><code>[
+  {"city":"重庆市市辖区","total":3245,"details":{"门禁":2435,"单元门":810}},
+  {"city":"上海市市辖区","total":3088,"details":{"门禁":2575,"单元门":513}},
+  {"city":"广州市","total":2883,"details":{"门禁":2172,"单元门":711}}
+]</code></pre>
+    </section>
+
+    <section class="block" id="chains">
+      <h2>五、典型 Agent 调用链</h2>
+
+      <h3>链 A：高端白酒 → AI 选点 → 建计划</h3>
+      <div class="flow">
+        <div class="step"><div class="n">1</div><div class="t">人群洞察</div></div>
+        <div class="arr">→</div>
+        <div class="step"><div class="n">2</div><div class="t">标签/房价筛屏</div></div>
+        <div class="arr">→</div>
+        <div class="step"><div class="n">3</div><div class="t">合规预审</div></div>
+        <div class="arr">→</div>
+        <div class="step"><div class="n">4</div><div class="t">建计划</div></div>
+      </div>
+<pre><code>curl -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H "X-API-Key: pdooh-agent-key-2026" -H "Content-Type: application/json" \
+  -d '{"name":"pdooh_audience_insight","arguments":{
+        "product_desc":"高端白酒，目标高净值人群",
+        "target_city":"广州","budget_hint":30000}}'
+
+curl -X POST .../tools/call -d '{"name":"pdooh_query_screens","arguments":{
+        "city":"广州","tags":["高端白酒"],"min_house_price":8,"limit":10}}'
+
+curl -X POST .../tools/call -d '{"name":"pdooh_compliance_check","arguments":{
+        "content":"品味传世，高端白酒限时品鉴","industry":"白酒"}}'
+
+curl -X POST .../tools/call -d '{"name":"pdooh_create_campaign","arguments":{
+        "name":"高端白酒-广州-周投","screen_ids":[1,2],
+        "start_date":"2026-06-15","end_date":"2026-06-21",
+        "budget":30000,"creative_text":"品味传世，高端白酒限时品鉴"}}'</code></pre>
+
+      <h3>链 B：客户筛选 → 商务跟进</h3>
+<pre><code>curl -X POST .../tools/call -d '{"name":"pdooh_query_customers","arguments":{
+        "city":"广州市","industry":"汽车","limit":20}}'</code></pre>
+
+      <h3>链 C：投放后查报告</h3>
+<pre><code>curl -X POST .../tools/call -d '{"name":"pdooh_query_report","arguments":{
+        "campaign_id":42,"start_date":"2026-06-01","end_date":"2026-06-30"}}'</code></pre>
+    </section>
+
+    <section class="block" id="deploy">
+      <h2>六、部署 & 接入</h2>
+      <h3>6.1 服务端口</h3>
+      <table>
+        <tr><th>端口</th><th>服务</th><th>地址</th></tr>
+        <tr><td>5002</td><td>Backend API（MCP）</td><td><code>http://47.253.159.62:5002</code></td></tr>
+        <tr><td>3000</td><td>Frontend</td><td><code>http://47.253.159.62:3000</code></td></tr>
+        <tr><td>80</td><td>Nginx</td><td><code>http://47.253.159.62</code></td></tr>
+      </table>
+      <h3>6.2 MCP 端点</h3>
+      <table>
+        <tr><th>端点</th><th>方法</th><th>说明</th></tr>
+        <tr><td><code>/api/v2/mcp/pdooh/health</code></td><td>GET</td><td>健康检查</td></tr>
+        <tr><td><code>/api/v2/mcp/pdooh/tools/list</code></td><td>GET</td><td>工具列表 + Schema</td></tr>
+        <tr><td><code>/api/v2/mcp/pdooh/tools/call</code></td><td>POST</td><td>工具调用</td></tr>
+        <tr><td><code>/api/v2/mcp/pdooh/skill.yaml</code></td><td>GET</td><td>MCP skill 声明</td></tr>
+      </table>
+      <h3>6.3 接入 WorkBuddy / Claude / Cursor</h3>
+      <p>WorkBuddy 通过 <code>WorkBuddy专家-管理员</code> 技能导入 <code>skill.yaml</code>，即可让 5 角色 AI 团（析客/瑞思/数析/竞析/首席）直接调用上述 19 个工具。</p>
+      <div class="call ok">✅ 本文档对应 <code>tools.json</code> + <code>skill.yaml</code> + <code>README.md</code> + 本 HTML，<strong>全部自包含、零外部依赖</strong>。</div>
+    </section>
+
+    <footer>
+      AIAdPlacer MCP 接口文档 · 秦岭传媒华南 AI · 2026-06-09 实拉自
+      <code>47.253.159.62:5002</code> · 数据规模 140,000+ 媒体资源
+    </footer>
+  </main>
+</div>
+</div>
+
+<script>
+  // 简易搜索过滤
+  const filter = document.getElementById('filter');
+  const tools = document.querySelectorAll('.tool');
+  filter.addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    tools.forEach(t => {
+      const txt = (t.dataset.name + ' ' + t.innerText).toLowerCase();
+      t.style.display = (!q || txt.includes(q)) ? '' : 'none';
+    });
+  });
+</script>
+</body>
+</html>
