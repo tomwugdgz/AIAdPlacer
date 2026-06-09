@@ -24,7 +24,7 @@ v3 → 做成SaaS平台（按投放金额收费）
 
 <p align="center">
   🌐 在线体验：<a href="http://duckwolf.cn/cps2.html">duckwolf.cn</a> ｜
-  📖 技术博客：<a href="http://duckwolf.cn/cps1.html">duckwolf.cn/blog</a> ｜
+  📖 技术博客：<a href="http://duckwolf.cn/cps1.html">duckwolf.cn/mcp.html</a> ｜
   💬 联系：<a href="mailto:duckwolf@qq.com">tom@duckwolf.cn</a>
 </p>
 
