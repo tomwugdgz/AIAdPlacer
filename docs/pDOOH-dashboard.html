@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pDOOH 户外广告效果数据可视化仪表盘</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:linear-gradient(135deg,#0a0e27 0%,#1a1a3e 100%);color:#e0e6ff;min-height:100vh;padding:20px}
+h1{text-align:center;font-size:2em;padding:20px 0 5px;background:linear-gradient(90deg,#4a90d9,#7b68ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{text-align:center;color:#8892b0;font-size:.9em;margin-bottom:30px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1400px;margin:0 auto}
+.card{background:rgba(20,24,56,.85);border:1px solid rgba(74,144,217,.15);border-radius:16px;padding:24px;backdrop-filter:blur(10px);transition:border-color .3s}
+.card:hover{border-color:rgba(123,104,238,.4)}
+.card-title{font-size:1.05em;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(74,144,217,.2);color:#c8d0f0}
+.card.full-width{grid-column:1/-1}
+svg{display:block;margin:0 auto}
+.tooltip{position:absolute;background:rgba(15,18,50,.95);border:1px solid #7b68ee;border-radius:8px;padding:8px 14px;font-size:13px;color:#e0e6ff;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(123,104,238,.3)}
+.legend{display:flex;justify-content:center;gap:20px;margin-top:10px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#a0a8c8}
+.legend-dot{width:12px;height:12px;border-radius:3px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>📊 pDOOH 户外广告效果量化验证仪表盘</h1>
+<p class="subtitle">Programmatic Digital Out-of-Home · 数据驱动的广告效果全景分析</p>
+<div id="tooltip" class="tooltip"></div>
+<div class="grid">
+
+<div class="card">
+<div class="card-title">图表1：品牌提升率对比（控制组 vs 曝光组）</div>
+<svg id="chart1" width="100%" viewBox="0 0 580 340"></svg>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#4a90d9"></div>控制组</div>
+<div class="legend-item"><div class="legend-dot" style="background:#7b68ee"></div>曝光组</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">图表2：品牌提升幅度排名（%）</div>
+<svg id="chart2" width="100%" viewBox="0 0 580 380"></svg>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>子品牌A</div>
+<div class="legend-item"><div class="legend-dot" style="background:#3498db"></div>母品牌</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">图表3：到店转化率对比（%）</div>
+<svg id="chart3" width="100%" viewBox="0 0 580 300"></svg>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#4a90d9"></div>对照组/传统媒体</div>
+<div class="legend-item"><div class="legend-dot" style="background:#7b68ee"></div>户外数字媒体</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">图表4：奢侈品品牌印象雷达图</div>
+<svg id="chart4" width="100%" viewBox="0 0 420 420"></svg>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#7b68ee"></div>曝光组评分</div>
+</div>
+</div>
+
+<div class="card full-width">
+<div class="card-title">图表5：曝光量计算流程图</div>
+<svg id="chart5" width="100%" viewBox="0 0 1100 200"></svg>
+</div>
+
+<div class="card">
+<div class="card-title">图表6：AECR 人群资产漏斗</div>
+<svg id="chart6" width="100%" viewBox="0 0 500 340"></svg>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#3498db"></div>A 吸引</div>
+<div class="legend-item"><div class="legend-dot" style="background:#7b68ee"></div>E 互动</div>
+<div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>C 转化</div>
+<div class="legend-item"><div class="legend-dot" style="background:#e74c3c"></div>R 挚友</div>
+</div>
+</div>
+
+</div>
+
+<script>
+var tooltip=document.getElementById('tooltip');
+var ns='http://www.w3.org/2000/svg';
+
+function mk(tag,attrs,text){
+  var e=document.createElementNS(ns,tag);
+  for(var k in attrs)if(attrs.hasOwnProperty(k))e.setAttribute(k,attrs[k]);
+  if(text!==undefined)e.textContent=text;
+  return e;
+}
+
+function bindHover(el,text){
+  el.addEventListener('mousemove',function(e){showTooltip(e,text)});
+  el.addEventListener('mouseleave',hideTooltip);
+}
+
+function showTooltip(e,text){
+  tooltip.innerHTML=text;tooltip.style.opacity=1;
+  var x=e.clientX+12,y=e.clientY-30;
+  if(x+160>window.innerWidth)x=e.clientX-170;
+  if(y<0)y=10;
+  tooltip.style.left=x+'px';tooltip.style.top=y+'px';
+}
+function hideTooltip(){tooltip.style.opacity=0}
+
+/* ===== CHART 1: Grouped Bar ===== */
+(function(){
+var svg=document.getElementById('chart1');
+var data=[
+  {label:'提示后提及',c:33,e:67},
+  {label:'偏好',c:19,e:32},
+  {label:'购买倾向',c:21,e:37}
+];
+var data2=[
+  {label:'提示后提及',c:3,e:67},
+  {label:'偏好',c:7,e:26},
+  {label:'购买倾向',c:14,e:33}
+];
+var W=580,H=340,mx=90,my=20,mw=470,mh=220,maxV=80;
+
+svg.appendChild(mk('line',{x1:mx,y1:my+mh,x2:mx+mw,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+svg.appendChild(mk('line',{x1:mx,y1:my,x2:mx,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+
+for(var i=0;i<=4;i++){
+  var v=Math.round(maxV/4*i),y=my+mh-mh*(v/maxV);
+  svg.appendChild(mk('line',{x1:mx,y1:y,x2:mx+mw,y2:y,stroke:'#1e2350','stroke-width':1,'stroke-dasharray':'4,4'}));
+  svg.appendChild(mk('text',{x:mx-8,y:y+4,'text-anchor':'end',fill:'#6a7198','font-size':11},v+'%'));
+}
+
+var gArr=[data,data2],gNames=['',''];
+gArr.forEach(function(g,gi){
+  var startX=gi===0?mx+20:mx+260;
+  g.forEach(function(d,i){
+    var gx=startX+i*82;
+    var x1=gx-16,x2=gx+16;
+    var h1=mh*(d.c/maxV),h2=mh*(d.e/maxV);
+    var y1=my+mh-h1,y2=my+mh-h2;
+
+    var b1=mk('rect',{x:x1,y:y1,width:32,height:h1,rx:3,fill:'#4a90d9',opacity:.88,cursor:'pointer'});
+    bindHover(b1,'<b>'+(gi===0?'母品牌':'子品牌A')+'</b><br>'+d.label+'<br>控制组: '+d.c+'%');
+    svg.appendChild(b1);
+
+    var b2=mk('rect',{x:x2,y:y2,width:32,height:h2,rx:3,fill:'#7b68ee',opacity:.88,cursor:'pointer'});
+    bindHover(b2,'<b>'+(gi===0?'母品牌':'子品牌A')+'</b><br>'+d.label+'<br>曝光组: '+d.e+'%');
+    svg.appendChild(b2);
+
+    svg.appendChild(mk('text',{x:x1+16,y:y1-5,'text-anchor':'middle',fill:'#8fa4cc','font-size':10,'font-weight':600},d.c+'%'));
+    svg.appendChild(mk('text',{x:x2+16,y:y2-5,'text-anchor':'middle',fill:'#c0b0e8','font-size':10,'font-weight':600},d.e+'%'));
+    svg.appendChild(mk('text',{x:gx,y:my+mh+16,'text-anchor':'middle',fill:'#8892b0','font-size':11},d.label));
+  });
+  svg.appendChild(mk('text',{x:startX+82,y:my+mh+34,'text-anchor':'middle',fill:'#c8d0f0','font-size':13,'font-weight':600},gi===0?'母品牌':'子品牌A'));
+});
+})();
+
+/* ===== CHART 2: Horizontal Bar Ranking ===== */
+(function(){
+var svg=document.getElementById('chart2');
+var data=[
+  {label:'子品A 第一提及',v:440,type:'sub'},
+  {label:'子品A 无提示',v:271,type:'sub'},
+  {label:'子品A 偏好',v:271,type:'sub'},
+  {label:'子品A 最可能购买',v:233,type:'sub'},
+  {label:'母品牌 无提示',v:268,type:'mom'},
+  {label:'母品牌 第一提及',v:182,type:'mom'},
+  {label:'子品A 购买',v:125,type:'sub'},
+  {label:'母品牌 提示后',v:103,type:'mom'},
+  {label:'母品牌 购买',v:80,type:'mom'},
+  {label:'母品牌 偏好',v:73,type:'mom'}
+];
+var mx=140,my=10,mw=420,mh=340,maxV=480,barH=24,gap=10;
+
+svg.appendChild(mk('line',{x1:mx,y1:my,x2:mx,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+svg.appendChild(mk('line',{x1:mx,y1:my+mh,x2:mx+mw,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+
+for(var i=0;i<=5;i++){
+  var v=Math.round(maxV/5*i),x=mx+mw*(v/maxV);
+  svg.appendChild(mk('line',{x1:x,y1:my,x2:x,y2:my+mh,stroke:'#1e2350','stroke-width':1,'stroke-dasharray':'4,4'}));
+  svg.appendChild(mk('text',{x:x,y:my+mh+14,'text-anchor':'middle',fill:'#6a7198','font-size':10},v+'%'));
+}
+
+data.forEach(function(d,i){
+  var y=my+i*(barH+gap);
+  var w=mw*(d.v/maxV);
+  var base=d.type==='sub'?'#7b68ee':'#4a90d9';
+  var fill=d.type==='sub'?'#9b59b6':'#3498db';
+
+  var bar=mk('rect',{x:mx,y:y,width:w,height:barH,rx:4,fill:fill,opacity:.85,cursor:'pointer'});
+  bindHover(bar,'<b>'+d.label+'</b><br>提升幅度: '+d.v+'%');
+  svg.appendChild(bar);
+
+  svg.appendChild(mk('text',{x:mx-8,y:y+barH/2+4,'text-anchor':'end',fill:'#a0a8c8','font-size':11},d.label));
+  svg.appendChild(mk('text',{x:mx+w+6,y:y+barH/2+4,fill:'#e0e6ff','font-size':11,'font-weight':600},d.v+'%'));
+});
+})();
+
+/* ===== CHART 3: Store Conversion Rate ===== */
+(function(){
+var svg=document.getElementById('chart3');
+var data=[
+  {label:'餐饮城市A',c:1.17,e:6.6},
+  {label:'餐饮城市B',c:0.38,e:8.0},
+  {label:'汽车',c:0.18,e:0.36},
+  {label:'视频vs门户',c:0.18,e:0.38}
+];
+var mx=70,my=20,mw=480,mh=210,maxV=10,barW=38;
+
+svg.appendChild(mk('line',{x1:mx,y1:my+mh,x2:mx+mw,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+svg.appendChild(mk('line',{x1:mx,y1:my,x2:mx,y2:my+mh,stroke:'#2a3070','stroke-width':1}));
+
+for(var i=0;i<=5;i++){
+  var v=maxV/5*i,y=my+mh-mh*(v/maxV);
+  svg.appendChild(mk('line',{x1:mx,y1:y,x2:mx+mw,y2:y,stroke:'#1e2350','stroke-width':1,'stroke-dasharray':'4,4'}));
+  svg.appendChild(mk('text',{x:mx-8,y:y+4,'text-anchor':'end',fill:'#6a7198','font-size':10},v.toFixed(1)+'%'));
+}
+
+data.forEach(function(d,i){
+  var gx=mx+45+i*115;
+  var x1=gx-barW/2,x2=gx+2;
+  var h1=mh*(d.c/maxV),h2=mh*(d.e/maxV);
+  var y1=my+mh-h1,y2=my+mh-h2;
+
+  var b1=mk('rect',{x:x1,y:y1,width:barW,height:h1,rx:4,fill:'#4a90d9',opacity:.85,cursor:'pointer'});
+  bindHover(b1,'<b>'+d.label+'</b><br>对照组: '+d.c+'%');
+  svg.appendChild(b1);
+
+  var b2=mk('rect',{x:x2,y:y2,width:barW,height:h2,rx:4,fill:'#7b68ee',opacity:.85,cursor:'pointer'});
+  bindHover(b2,'<b>'+d.label+'</b><br>户外组: '+d.e+'%');
+  svg.appendChild(b2);
+
+  svg.appendChild(mk('text',{x:x1+barW/2,y:y1-5,'text-anchor':'middle',fill:'#8fa4cc','font-size':10},d.c+'%'));
+  svg.appendChild(mk('text',{x:x2+barW/2,y:y2-5,'text-anchor':'middle',fill:'#c0b0e8','font-size':10},d.e+'%'));
+  svg.appendChild(mk('text',{x:gx,y:my+mh+16,'text-anchor':'middle',fill:'#8892b0','font-size':11},d.label));
+});
+})();
+
+/* ===== CHART 4: Radar ===== */
+(function(){
+var svg=document.getElementById('chart4');
+var cx=210,cy=210,R=140;
+var dims=[
+  {label:'品牌印象',v:50},
+  {label:'喜欢度',v:54},
+  {label:'购买倾向',v:60}
+];
+var n=dims.length,a0=-Math.PI/2;
+
+for(var r=1;r<=5;r++){
+  var pts=[];
+  for(var i=0;i<n;i++){
+    var a=a0+2*Math.PI*i/n;
+    pts.push((cx+R*r/5*Math.cos(a)).toFixed(1)+','+(cy+R*r/5*Math.sin(a)).toFixed(1));
+  }
+  svg.appendChild(mk('polygon',{points:pts.join(' '),fill:'none',stroke:'#1e2350','stroke-width':1}));
+}
+
+for(var i=0;i<n;i++){
+  var a=a0+2*Math.PI*i/n;
+  svg.appendChild(mk('line',{x1:cx,y1:cy,x2:cx+R*Math.cos(a),y2:cy+R*Math.sin(a),stroke:'#2a3070','stroke-width':1}));
+  var lx=cx+(R+24)*Math.cos(a),ly=cy+(R+24)*Math.sin(a);
+  svg.appendChild(mk('text',{x:lx,y:ly+4,'text-anchor':'middle',fill:'#a0a8c8','font-size':12},dims[i].label));
+}
+
+var pts=[];
+dims.forEach(function(d,i){
+  var a=a0+2*Math.PI*i/n;
+  var r=R*(d.v/100);
+  pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));
+  var px=cx+r*Math.cos(a),py=cy+r*Math.sin(a);
+  var dot=mk('circle',{cx:px,cy:py,r:5,fill:'#7b68ee',stroke:'#1a1a3e','stroke-width':2});
+  bindHover(dot,d.label+': '+d.v+'%');
+  svg.appendChild(dot);
+  svg.appendChild(mk('text',{x:px,y:py-10,'text-anchor':'middle',fill:'#e0e6ff','font-size':12,'font-weight':600},d.v+'%'));
+});
+
+var poly=mk('polygon',{points:pts.join(' '),fill:'rgba(123,104,238,.25)',stroke:'#7b68ee','stroke-width':2});
+bindHover(poly,'<b>奢侈品品牌雷达</b><br>品牌印象: 50%<br>喜欢度: 54%<br>购买倾向: 60%');
+svg.appendChild(poly);
+})();
+
+/* ===== CHART 5: Flowchart ===== */
+(function(){
+var svg=document.getElementById('chart5');
+
+var steps=[
+  {label:'LBS定位',sub:'LBS+场域+运营商',x:30},
+  {label:'OTC_flow',sub:'人流计数(含停留时长)',x:210},
+  {label:'IMP_flow',sub:'曝光估算(可见性)',x:390},
+  {label:'OTC_dwell',sub:'有效停留(≥3秒)',x:570},
+  {label:'IMP_dwell',sub:'有效曝光(≥3秒)',x:750},
+  {label:'IMP曝光量',sub:'最终输出+曝光乘数',x:920}
+];
+
+// arrow marker
+var defs=mk('defs',{});
+var marker=mk('marker',{id:'arrow',markerWidth:'10',markerHeight:'7',refX:'9',refY:'3.5',orient:'auto'});
+marker.appendChild(mk('polygon',{points:'0 0, 10 3.5, 0 7',fill:'#4a90d9'}));
+defs.appendChild(marker);svg.appendChild(defs);
+
+var W=1100,H=200;
+steps.forEach(function(s,i){
+  var w=155,h=85,y=30,r=10;
+  var c1=i%2===0?'#4a90d9':'#7b68ee';
+
+  var gradId='fg'+i;
+  var defs2=mk('defs',{});
+  var grad=mk('linearGradient',{id:gradId,x1:'0',y1:'0',x2:'1',y2:'1'});
+  grad.appendChild(mk('stop',{offset:'0%','stop-color':c1,'stop-opacity':'.8'}));
+  grad.appendChild(mk('stop',{offset:'100%','stop-color':c1,'stop-opacity':'.5'}));
+  defs2.appendChild(grad);svg.appendChild(defs2);
+
+  var rect=mk('rect',{x:s.x,y:y,width:w,height:h,rx:r,fill:'url(#'+gradId+')',stroke:c1,'stroke-width':1.5,opacity:.85,cursor:'pointer'});
+  bindHover(rect,'<b>'+s.label+'</b><br>'+s.sub);
+  svg.appendChild(rect);
+
+  svg.appendChild(mk('text',{x:s.x+w/2,y:y+38,'text-anchor':'middle',fill:'#e0e6ff','font-size':14,'font-weight':600},s.label));
+  svg.appendChild(mk('text',{x:s.x+w/2,y:y+62,'text-anchor':'middle',fill:'#c8d0f0','font-size':10},s.sub));
+  svg.appendChild(mk('text',{x:s.x+w/2,y:y+h+20,'text-anchor':'middle',fill:'#6a7198','font-size':10},'步骤'+(i+1)));
+
+  if(i<steps.length-1){
+    var ax=s.x+w,ay=y+h/2;
+    svg.appendChild(mk('line',{x1:ax,y1:ay,x2:ax+12,y2:ay,stroke:'#4a90d9','stroke-width':2,'marker-end':'url(#arrow)'}));
+  }
+});
+})();
+
+/* ===== CHART 6: AECR Funnel ===== */
+(function(){
+var svg=document.getElementById('chart6');
+var cx=250,startY=20;
+var stages=[
+  {label:'A 吸引',sub:'Awareness',w:400,h:70,v:100,color:'#3498db'},
+  {label:'E 互动',sub:'Engagement',w:310,h:70,v:48,color:'#7b68ee'},
+  {label:'C 转化',sub:'Conversion',w:220,h:70,v:22,color:'#9b59b6'},
+  {label:'R 挚友',sub:'Loyalty',w:140,h:70,v:8,color:'#e74c3c'}
+];
+
+stages.forEach(function(s,i){
+  var y=startY+i*80;
+  var x=cx-s.w/2;
+
+  var gradId='fg'+i;
+  var defs=mk('defs',{});
+  var grad=mk('linearGradient',{id:gradId,x1:'0',y1:'0',x2:'0',y2:'1'});
+  grad.appendChild(mk('stop',{offset:'0%','stop-color':s.color,'stop-opacity':'.9'}));
+  grad.appendChild(mk('stop',{offset:'100%','stop-color':s.color,'stop-opacity':'.55'}));
+  defs.appendChild(grad);svg.appendChild(defs);
+
+  var poly=mk('polygon',{
+    points:(cx-s.w/2).toFixed(0)+','+y+' '+(cx+s.w/2).toFixed(0)+','+y+' '+(cx+s.w/2-12).toFixed(0)+','+(y+s.h)+' '+(cx-s.w/2+12).toFixed(0)+','+(y+s.h),
+    fill:'url(#'+gradId+')',stroke:s.color,'stroke-width':1.5,opacity:.9,cursor:'pointer'
+  });
+  bindHover(poly,'<b>'+s.label+'</b><br>'+s.sub+'<br>占比: '+s.v+'%');
+  svg.appendChild(poly);
+
+  svg.appendChild(mk('text',{x:cx,y:y+30,'text-anchor':'middle',fill:'#e0e6ff','font-size':15,'font-weight':600},s.label));
+  svg.appendChild(mk('text',{x:cx,y:y+48,'text-anchor':'middle',fill:'#c0c8e8','font-size':11},s.sub));
+  svg.appendChild(mk('text',{x:cx+s.w/2+25,y:y+s.h/2+4,fill:s.color,'font-size':13,'font-weight':600},s.v+'%'));
+});
+})();
+</script>
+</body>
+</html>

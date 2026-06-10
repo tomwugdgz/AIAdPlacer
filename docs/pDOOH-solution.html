@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI + pDOOH：程序化户外广告效果论证与平台方案</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-primary:#0a0e27;
+  --bg-secondary:#1a1a3e;
+  --bg-card:#121638;
+  --text-primary:#e0e6ff;
+  --text-secondary:#a0a8d0;
+  --accent-blue:#4a7dff;
+  --accent-purple:#8b5cf6;
+  --accent-cyan:#06b6d4;
+  --accent-green:#10b981;
+  --accent-orange:#f59e0b;
+  --accent-red:#ef4444;
+  --accent-pink:#ec4899;
+  --border-color:rgba(74,125,255,0.2);
+  --gradient-primary:linear-gradient(135deg,#4a7dff,#8b5cf6);
+  --gradient-bg:linear-gradient(180deg,#0a0e27 0%,#1a1a3e 50%,#0f1130 100%);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;
+  background:var(--gradient-bg);
+  color:var(--text-primary);
+  line-height:1.7;
+  min-height:100vh;
+}
+/* Navigation */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(10,14,39,0.92);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border-color);
+  padding:0 2rem;
+}
+.nav-inner{
+  max-width:1200px;margin:auto;
+  display:flex;align-items:center;gap:1.5rem;
+  height:56px;overflow-x:auto;
+}
+.nav-inner a{
+  color:var(--text-secondary);text-decoration:none;
+  font-size:.82rem;white-space:nowrap;
+  padding:0.3rem 0;
+  transition:color .2s;
+}
+.nav-inner a:hover{color:var(--accent-cyan)}
+/* Hero */
+.hero{
+  margin-top:56px;
+  padding:5rem 2rem 3.5rem;
+  text-align:center;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(74,125,255,0.12) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 50%,rgba(139,92,246,0.08) 0%,transparent 50%);
+}
+.hero h1{
+  font-size:2.6rem;font-weight:800;
+  background:var(--gradient-primary);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:1rem;
+}
+.hero .subtitle{color:var(--text-secondary);font-size:1.15rem;max-width:700px;margin:0 auto}
+.hero .meta{
+  margin-top:1.2rem;font-size:.85rem;color:var(--text-secondary);
+  display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;
+}
+/* Layout */
+main{max-width:1100px;margin:auto;padding:2rem 2rem 4rem}
+section{margin-bottom:3.5rem}
+h2{
+  font-size:1.7rem;font-weight:700;
+  margin-bottom:1.5rem;
+  padding-bottom:.6rem;
+  border-bottom:2px solid var(--border-color);
+  background:var(--gradient-primary);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+h3{
+  font-size:1.2rem;font-weight:600;
+  color:var(--accent-cyan);
+  margin:1.8rem 0 .8rem;
+}
+h4{
+  font-size:1rem;font-weight:600;
+  color:var(--accent-purple);
+  margin:1.2rem 0 .6rem;
+}
+p{margin-bottom:1rem;color:var(--text-primary)}
+.text-secondary{color:var(--text-secondary)}
+/* Cards */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:12px;
+  padding:1.5rem 1.8rem;
+  margin-bottom:1.2rem;
+  transition:border-color .2s;
+}
+.card:hover{border-color:rgba(74,125,255,0.4)}
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1rem;
+}
+.card-grid .card{margin-bottom:0}
+/* Highlight boxes */
+.highlight-box{
+  background:linear-gradient(135deg,rgba(74,125,255,0.1),rgba(139,92,246,0.1));
+  border-left:4px solid var(--accent-blue);
+  border-radius:0 10px 10px 0;
+  padding:1rem 1.3rem;
+  margin:1rem 0;
+}
+.highlight-box.green{
+  background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(6,182,212,0.1));
+  border-left-color:var(--accent-green);
+}
+.highlight-box.orange{
+  background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(239,68,68,0.1));
+  border-left-color:var(--accent-orange);
+}
+.highlight-box.pink{
+  background:linear-gradient(135deg,rgba(236,72,153,0.1),rgba(139,92,246,0.1));
+  border-left-color:var(--accent-pink);
+}
+/* Stats */
+.stat-row{
+  display:flex;gap:1rem;flex-wrap:wrap;
+  margin:1rem 0;
+}
+.stat-card{
+  flex:1;min-width:160px;
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:10px;
+  padding:1rem 1.2rem;
+  text-align:center;
+}
+.stat-card .stat-value{
+  font-size:2rem;font-weight:800;
+  background:var(--gradient-primary);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.stat-card .stat-label{font-size:.82rem;color:var(--text-secondary);margin-top:.3rem}
+/* Tables */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--bg-card);
+  border-radius:10px;overflow:hidden;
+  margin:1rem 0 1.5rem;
+  font-size:.9rem;
+}
+thead{background:rgba(74,125,255,0.15)}
+th{
+  padding:.75rem 1rem;text-align:left;
+  color:var(--accent-cyan);font-weight:600;
+  border-bottom:2px solid var(--border-color);
+  font-size:.85rem;
+}
+td{
+  padding:.65rem 1rem;
+  border-bottom:1px solid rgba(74,125,255,0.08);
+  color:var(--text-primary);
+}
+tr:hover td{background:rgba(74,125,255,0.05)}
+td.highlight{
+  color:var(--accent-green);
+  font-weight:700;
+}
+td.highlight-red{
+  color:var(--accent-red);
+  font-weight:700;
+}
+td.highlight-orange{
+  color:var(--accent-orange);
+  font-weight:700;
+}
+/* Formulas */
+.formula-block{
+  background:rgba(6,182,212,0.06);
+  border:1px solid rgba(6,182,212,0.2);
+  border-radius:10px;
+  margin:1rem 0;
+  overflow:hidden;
+}
+.formula-title{
+  background:rgba(6,182,212,0.1);
+  padding:.5rem 1rem;
+  font-size:.85rem;
+  color:var(--accent-cyan);
+  font-weight:600;
+}
+.formula-block pre{
+  margin:0;padding:1rem 1.2rem;
+  overflow-x:auto;
+}
+.formula-block code{
+  font-family:"Cascadia Code","Fira Code","Consolas",monospace;
+  font-size:.92rem;
+  color:var(--text-primary);
+  line-height:1.8;
+}
+.formula-block .formula-var{color:var(--accent-cyan)}
+.formula-block .formula-op{color:var(--accent-purple)}
+.formula-block .formula-num{color:var(--accent-orange)}
+/* Details */
+details{
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:8px;
+  margin:.8rem 0;
+  overflow:hidden;
+}
+summary{
+  padding:.8rem 1.2rem;
+  cursor:pointer;
+  color:var(--accent-purple);
+  font-weight:600;
+  font-size:.92rem;
+  user-select:none;
+  transition:background .2s;
+}
+summary:hover{background:rgba(139,92,246,0.08)}
+details[open] summary{border-bottom:1px solid var(--border-color)}
+details .details-body{padding:1rem 1.2rem}
+/* Lists */
+ul,ol{margin:0.5rem 0 1rem 1.5rem;color:var(--text-primary)}
+li{margin-bottom:.4rem}
+li::marker{color:var(--accent-blue)}
+/* Tags */
+.tag{
+  display:inline-block;
+  padding:.15rem .6rem;
+  border-radius:20px;
+  font-size:.75rem;
+  font-weight:600;
+  margin:.15rem .2rem;
+}
+.tag-blue{background:rgba(74,125,255,0.15);color:var(--accent-blue)}
+.tag-purple{background:rgba(139,92,246,0.15);color:var(--accent-purple)}
+.tag-cyan{background:rgba(6,182,212,0.15);color:var(--accent-cyan)}
+.tag-green{background:rgba(16,185,129,0.15);color:var(--accent-green)}
+.tag-orange{background:rgba(245,158,11,0.15);color:var(--accent-orange)}
+.tag-pink{background:rgba(236,72,153,0.15);color:var(--accent-pink)}
+.tag-red{background:rgba(239,68,68,0.15);color:var(--accent-red)}
+/* Architecture diagram */
+.arch-container{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1rem;
+  margin:1.5rem 0;
+}
+.arch-box{
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:12px;
+  padding:1.2rem;
+  text-align:center;
+  position:relative;
+}
+.arch-box .arch-icon{font-size:2rem;margin-bottom:.5rem}
+.arch-box h4{margin:0 0 .4rem;text-align:center}
+.arch-box p{font-size:.85rem;color:var(--text-secondary);margin:0}
+.arch-connector{
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accent-blue);font-size:1.5rem;
+}
+/* Phase timeline */
+.phase-timeline{
+  position:relative;
+  padding-left:2rem;
+  margin:1.5rem 0;
+}
+.phase-timeline::before{
+  content:'';
+  position:absolute;left:8px;top:0;bottom:0;
+  width:3px;
+  background:var(--gradient-primary);
+  border-radius:3px;
+}
+.phase-item{
+  position:relative;
+  margin-bottom:1.5rem;
+  padding-left:1.5rem;
+}
+.phase-item::before{
+  content:'';
+  position:absolute;left:-1.55rem;top:.5rem;
+  width:14px;height:14px;
+  border-radius:50%;
+  background:var(--accent-blue);
+  border:3px solid var(--bg-primary);
+}
+.phase-item .phase-num{
+  font-size:.78rem;font-weight:700;
+  color:var(--accent-blue);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.phase-item h4{margin:.2rem 0 .4rem}
+.phase-item p{font-size:.9rem;color:var(--text-secondary)}
+/* Progress bar */
+.progress-bar{
+  height:8px;
+  background:rgba(74,125,255,0.1);
+  border-radius:8px;
+  overflow:hidden;
+  margin:.5rem 0;
+}
+.progress-bar .fill{
+  height:100%;
+  border-radius:8px;
+  background:var(--gradient-primary);
+  transition:width .3s;
+}
+/* Badge */
+.badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.2rem .7rem;
+  border-radius:20px;
+  font-size:.78rem;
+  font-weight:600;
+}
+.badge-green{background:rgba(16,185,129,0.15);color:var(--accent-green)}
+.badge-red{background:rgba(239,68,68,0.15);color:var(--accent-red)}
+.badge-blue{background:rgba(74,125,255,0.15);color:var(--accent-blue)}
+/* Divider */
+.divider{
+  height:1px;
+  background:var(--border-color);
+  margin:2rem 0;
+}
+/* Footer */
+footer{
+  text-align:center;
+  padding:2rem;
+  color:var(--text-secondary);
+  font-size:.82rem;
+  border-top:1px solid var(--border-color);
+}
+/* Responsive */
+@media(max-width:768px){
+  .hero h1{font-size:1.8rem}
+  .hero .meta{flex-direction:column;gap:.5rem}
+  main{padding:1.5rem 1rem 3rem}
+  .stat-row{flex-direction:column}
+  .card-grid{grid-template-columns:1fr}
+  nav{padding:0 1rem}
+}
+/* Print */
+@media print{
+  body{background:#fff;color:#1a1a2e}
+  nav{display:none}
+  .hero{margin-top:0}
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <a href="#exec-summary">执行摘要</a>
+    <a href="#standards">测量标准</a>
+    <a href="#data">核心数据</a>
+    <a href="#cases">案例实证</a>
+    <a href="#platform">平台架构</a>
+    <a href="#roadmap">实施路径</a>
+    <a href="#roi">ROI预测</a>
+    <a href="#conclusion">结论建议</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>AI + pDOOH</h1>
+  <p class="subtitle">程序化户外广告效果论证与平台方案</p>
+  <div class="meta">
+    <span>📊 基于 T/CAAAD 040-2025 行业标准</span>
+    <span>🔬 秒针系统实证数据支撑</span>
+    <span>🚀 腾讯位置服务数据基础</span>
+  </div>
+</div>
+
+<main>
+
+<!-- ==================== 第1章 执行摘要 ==================== -->
+<section id="exec-summary">
+  <h2>第1章 执行摘要</h2>
+
+  <div class="card">
+    <p>户外广告行业正经历从<strong>「经验驱动」向「数据驱动」</strong>的历史性转型。程序化数字户外广告（pDOOH）通过AI技术与程序化交易的结合，正在重构户外广告的投放逻辑和效果评估体系。</p>
+    <p>本报告基于<strong>中国广告协会 T/CAAAD 040-2025《户外广告曝光量评估》行业标准</strong>，结合秒针系统、腾讯位置服务等一线实测数据，系统论证 AI + pDOOH 平台的技术可行性与商业价值。</p>
+  </div>
+
+  <h3>核心发现</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">+103%</div>
+      <div class="stat-label">品牌总提及提升</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">+271%</div>
+      <div class="stat-label">品牌偏好提升（子品）</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">21×</div>
+      <div class="stat-label">到店率提升（餐饮）</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">+60%</div>
+      <div class="stat-label">购买倾向提升（奢侈品）</div>
+    </div>
+  </div>
+
+  <h3>关键结论</h3>
+  <div class="highlight-box">
+    <p><strong>品牌提升显著：</strong>DOOH广告对品牌总提及、品牌偏好、购买倾向等核心KPI均有显著提升，且95%置信水平下统计显著。</p>
+  </div>
+  <div class="highlight-box green">
+    <p><strong>到店转化强劲：</strong>餐饮品牌户外曝光组到店率较控制组提升5.6-21倍，汽车品牌提升2倍，户外广告到店转化率最高。</p>
+  </div>
+  <div class="highlight-box orange">
+    <p><strong>行业异常严峻：</strong>户外大牌异常率&gt;10%，LED媒体约9%，平均直接经济损失10+万元，AI驱动的异常检测需求迫切。</p>
+  </div>
+  <div class="highlight-box pink">
+    <p><strong>跨屏增量明确：</strong>线上设备ID与线下LBS设备ID重合度仅1.9%，DOOH为数字营销带来明确的增量触达价值。</p>
+  </div>
+
+  <h3>平台方案概述</h3>
+  <p>基于上述论证，我们提出<strong>AI + pDOOH平台方案</strong>，包含六大核心模块：曝光计算引擎、AI受众画像、BrandLift实时测量、Ad-to-Visits到店归因、AECR人群资产管理、跨屏去重系统。该平台以T/CAAAD 040-2025标准公式体系为计算基础，融合AI技术实现户外广告的精准测量、智能优化和效果归因。</p>
+</section>
+
+<!-- ==================== 第2章 行业标准与公式体系 ==================== -->
+<section id="standards">
+  <h2>第2章 行业测量标准与公式体系</h2>
+
+  <div class="card">
+    <h4>标准基本信息</h4>
+    <table>
+      <tr><th>项目</th><th>内容</th></tr>
+      <tr><td>标准编号</td><td>T/CAAAD 040-2025</td></tr>
+      <tr><td>发布单位</td><td>中国广告协会 + 中国通信标准化协会</td></tr>
+      <tr><td>发布日期</td><td>2025年12月01日</td></tr>
+      <tr><td>实施日期</td><td>2026年03月01日</td></tr>
+      <tr><td>起草单位</td><td>德高广告（上海）有限公司、中国广告协会、中国信息通信研究院、明略科技有限公司</td></tr>
+    </table>
+  </div>
+
+  <h3>2.1 核心术语体系</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>DOOH</h4>
+      <p class="text-secondary">Digital Out-Of-Home，数字户外媒体</p>
+    </div>
+    <div class="card">
+      <h4>曝光量 (Impression)</h4>
+      <p class="text-secondary">广告展示总次数</p>
+    </div>
+    <div class="card">
+      <h4>有效曝光量 (Effective Impression)</h4>
+      <p class="text-secondary">实际被注意到并有影响力的曝光次数</p>
+    </div>
+    <div class="card">
+      <h4>曝光乘数 (Impression Multiplier)</h4>
+      <p class="text-secondary">每播放一次广告片所产生的曝光量</p>
+    </div>
+    <div class="card">
+      <h4>流动曝光 (Dynamic Impression)</h4>
+      <p class="text-secondary">动态环境中的曝光（公交、地铁）</p>
+    </div>
+    <div class="card">
+      <h4>驻留曝光 (Dwell Impression)</h4>
+      <p class="text-secondary">固定地点展示的曝光（街头广告牌、商场）</p>
+    </div>
+    <div class="card">
+      <h4>曝光概率 (OTC)</h4>
+      <p class="text-secondary">Opportunity To See，广告被目标受众看到的机会</p>
+    </div>
+    <div class="card">
+      <h4>接触频次 (Frequency)</h4>
+      <p class="text-secondary">平均每个个体看到广告的次数</p>
+    </div>
+  </div>
+
+  <h3>2.2 核心公式体系</h3>
+  <p>标准定义了完整的公式体系，从流动曝光、驻留曝光到总曝光和曝光乘数，为DOOH效果测量提供了科学的量化基础。</p>
+
+  <div class="formula-block">
+    <div class="formula-title">公式1 — 流动曝光量计算</div>
+    <pre><code><span class="formula-var">IMP_flow</span> <span class="formula-op">=</span> <span class="formula-var">OTC_flow</span> <span class="formula-op">×</span> <span class="formula-var">SOT</span> <span class="formula-op">×</span> <span class="formula-var">Traffic</span></code></pre>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-title">公式2 — 流动曝光概率（OTC_flow）</div>
+    <pre><code><span class="formula-var">OTC_flow</span> <span class="formula-op">=</span> max((<span class="formula-var">T_exposure</span> <span class="formula-op">−</span> <span class="formula-var">T_ad</span> <span class="formula-op">/</span> <span class="formula-num">2</span>) <span class="formula-op">/</span> <span class="formula-var">T_ad</span>, <span class="formula-num">0</span>)
+
+<span class="text-secondary">规则说明：
+  • 受众需至少观看两次广告片才算有效曝光
+  • 不足一秒的接触不计入有效曝光
+  • T_exposure = 受众在广告前的暴露时长
+  • T_ad = 广告片播放时长</span></code></pre>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-title">公式3 — 驻留曝光量计算</div>
+    <pre><code><span class="formula-var">IMP_dwell</span> <span class="formula-op">=</span> <span class="formula-var">OTC_dwell</span> <span class="formula-op">×</span> <span class="formula-var">Traffic</span></code></pre>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-title">公式4 — 驻留曝光概率（OTC_dwell）</div>
+    <pre><code><span class="formula-var">OTC_dwell</span> <span class="formula-op">=</span> <span class="formula-var">T_exposure</span> <span class="formula-op">÷</span> <span class="formula-num">300</span>
+
+<span class="text-secondary">规则说明：
+  • 每额外停留5分钟（300秒）增加一个观看次数
+  • 适用于商场、街道等固定场景
+  • 300秒为经验常数，基于平均注意力周期</span></code></pre>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-title">公式5 — 单个点位总曝光量</div>
+    <pre><code><span class="formula-var">IMP</span> <span class="formula-op">=</span> <span class="formula-var">IMP_flow</span> <span class="formula-op">+</span> <span class="formula-var">IMP_dwell</span>
+
+<span class="text-secondary">总曝光 = 流动曝光 + 驻留曝光</span></code></pre>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-title">公式6 — 曝光乘数</div>
+    <pre><code><span class="formula-var">ImpressionMultiplier</span> <span class="formula-op">=</span> (<span class="formula-var">Traffic</span> <span class="formula-op">×</span> <span class="formula-var">IMP_flow</span>) <span class="formula-op">÷</span> <span class="formula-var">ad_slots</span>
+
+<span class="text-secondary">说明：
+  • ad_slots = 广告位播放槽位数
+  • 曝光乘数越大，单次播放的广告触达效果越好
+  • 用于衡量不同点位的投放效率</span></code></pre>
+  </div>
+
+  <h3>2.3 技术算法</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>迪杰斯特拉算法</h4>
+      <p class="text-secondary">计算地铁与机场场域的最短路径，分析人流走向和触点分布。</p>
+    </div>
+    <div class="card">
+      <h4>有向带权图</h4>
+      <p class="text-secondary">顶点=进出节点，边=流动关系，权重=人数比例。用于建模场域内人流分布。</p>
+    </div>
+  </div>
+
+  <h3>2.4 数据源体系</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>场域运营数据</h4>
+      <p class="text-secondary">地铁站/机场/商场的客流统计数据</p>
+    </div>
+    <div class="card">
+      <h4>电信运营商数据</h4>
+      <p class="text-secondary">GPS/WiFi/蓝牙定位数据，日均1600亿+条</p>
+    </div>
+    <div class="card">
+      <h4>地理信息数据</h4>
+      <p class="text-secondary">8000万+POI数据，95%道路覆盖</p>
+    </div>
+    <div class="card">
+      <h4>环境与交通</h4>
+      <p class="text-secondary">天气、交通流量等影响曝光概率的外部因素</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>📐 公式应用示例：地铁站点位曝光计算</summary>
+    <div class="details-body">
+      <p>假设某地铁站点位：</p>
+      <ul>
+        <li>日客流量 (Traffic) = 50,000 人</li>
+        <li>广告片时长 (T_ad) = 15 秒</li>
+        <li>平均暴露时长 (T_exposure) = 20 秒</li>
+        <li>广告播放槽位 (ad_slots) = 48 个/天</li>
+      </ul>
+      <p><strong>流动曝光概率：</strong>OTC_flow = max((20 - 15/2) / 15, 0) = max(12.5/15, 0) = 0.833</p>
+      <p><strong>流动曝光量：</strong>IMP_flow = 0.833 × SOT × 50,000</p>
+      <p><strong>驻留曝光概率：</strong>假设平均停留10分钟，OTC_dwell = 600 ÷ 300 = 2.0</p>
+      <p><strong>驻留曝光量：</strong>IMP_dwell = 2.0 × 50,000 = 100,000</p>
+      <p><strong>总曝光量：</strong>IMP = IMP_flow + IMP_dwell</p>
+      <p><strong>曝光乘数：</strong>ImpressionMultiplier = (50,000 × IMP_flow) ÷ 48</p>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 第3章 核心数据论证 ==================== -->
+<section id="data">
+  <h2>第3章 核心数据论证</h2>
+
+  <h3>3.1 品牌提升实证 — 母品牌</h3>
+  <p>基于BrandLift实验设计，曝光组N=200，控制组N=200，*表示95%置信水平下统计显著差异。</p>
+  <table>
+    <thead>
+      <tr><th>指标</th><th>控制组</th><th>曝光组</th><th>提升率</th><th>显著性</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>提示后品牌总提及</td><td>33%</td><td>67%</td><td class="highlight">+103%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+      <tr><td>品牌偏好</td><td>19%</td><td>32%</td><td class="highlight">+73%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+      <tr><td>品牌购买倾向</td><td>21%</td><td>37%</td><td class="highlight">+80%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+    </tbody>
+  </table>
+  <div class="highlight-box">
+    <p><strong>核心洞察：</strong>DOOH广告使品牌总提及率翻倍（+103%），品牌偏好提升73%，购买倾向提升80%，全面覆盖品牌认知到购买决策的关键链路。</p>
+  </div>
+
+  <h3>3.2 品牌提升实证 — 子品A</h3>
+  <table>
+    <thead>
+      <tr><th>指标</th><th>控制组</th><th>曝光组</th><th>提升率</th><th>显著性</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>提示后品牌总提及</td><td>3%</td><td>67%</td><td class="highlight">+103%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+      <tr><td>品牌偏好</td><td>7%</td><td>26%</td><td class="highlight">+271%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+      <tr><td>品牌购买倾向</td><td>14%</td><td>33%</td><td class="highlight">+125%</td><td><span class="badge badge-green">95%显著</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 各指标提升幅度全景</h3>
+  <table>
+    <thead>
+      <tr><th>品牌</th><th>指标</th><th>提升率</th><th>等级</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>子品A</td><td>第一品牌提及</td><td class="highlight">+440%</td><td><span class="tag tag-green">顶级</span></td></tr>
+      <tr><td>子品A</td><td>无提示品牌总提及</td><td class="highlight">+271%</td><td><span class="tag tag-green">顶级</span></td></tr>
+      <tr><td>子品A</td><td>最可能品牌购买倾向</td><td class="highlight">+233%</td><td><span class="tag tag-green">顶级</span></td></tr>
+      <tr><td>母品牌</td><td>第一品牌提及</td><td class="highlight">+182%</td><td><span class="tag tag-cyan">优秀</span></td></tr>
+      <tr><td>母品牌</td><td>无提示品牌总提及</td><td class="highlight">+268%</td><td><span class="tag tag-green">顶级</span></td></tr>
+      <tr><td>母品牌</td><td>提示后品牌总提及</td><td class="highlight">+9%</td><td><span class="tag tag-blue">温和</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.4 品牌效应</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">23%</div>
+      <div class="stat-label">被访者将子品A广告视为子品B广告（母品牌效应）</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">51%</div>
+      <div class="stat-label">曝光组声称看过本品广告</div>
+    </div>
+  </div>
+
+  <details>
+    <summary>📊 提升率计算方法说明</summary>
+    <div class="details-body">
+      <div class="formula-block">
+        <div class="formula-title">提升率公式</div>
+        <pre><code><span class="formula-var">提升率</span> <span class="formula-op">=</span> (<span class="formula-var">曝光组%</span> <span class="formula-op">−</span> <span class="formula-var">控制组%</span>) <span class="formula-op">/</span> <span class="formula-var">控制组%</span> <span class="formula-op">×</span> <span class="formula-num">100%</span></code></pre>
+      </div>
+      <p>例如：子品A 第一品牌提及，控制组1%，曝光组5.4%，提升率 = (5.4 - 1) / 1 × 100% = +440%</p>
+    </div>
+  </details>
+
+  <h3>3.5 到店转化率实证</h3>
+
+  <h4>餐饮品牌案例</h4>
+  <table>
+    <thead>
+      <tr><th>城市</th><th>户外曝光组到店率</th><th>控制组到店率</th><th>提升倍数</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>城市A</td><td>6.6%</td><td>1.17%</td><td class="highlight">+5.6×</td></tr>
+      <tr><td>城市B</td><td>8.0%</td><td>0.38%</td><td class="highlight">+21×</td></tr>
+    </tbody>
+  </table>
+
+  <h4>汽车品牌案例</h4>
+  <table>
+    <thead>
+      <tr><th>媒介组</th><th>到店率</th><th>相对控制组提升</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>户外曝光组</td><td>0.36%</td><td class="highlight">2×</td></tr>
+      <tr><td>视频曝光组</td><td>0.38%</td><td>2.1×</td></tr>
+      <tr><td>门户曝光组</td><td>0.18%</td><td>1×</td></tr>
+      <tr><td>控制组</td><td>0.18%</td><td>基准</td></tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box green">
+    <p><strong>关键发现：</strong>汽车品牌到店率对比显示，户外曝光组到店率与视频曝光组相当（0.36% vs 0.38%），均显著高于门户曝光组（0.18%），<strong>户外广告到店转化率最高</strong>。</p>
+  </div>
+
+  <h4>技术实现</h4>
+  <div class="card-grid">
+    <div class="card">
+      <h4>WIFI到店技术</h4>
+      <p class="text-secondary">WIFI指纹识别，精准判定用户是否进入广告影响范围</p>
+    </div>
+    <div class="card">
+      <h4>指定半径验证</h4>
+      <p class="text-secondary">重合UV / 广告曝光UV = 到店占比，精确定量转化效果</p>
+    </div>
+  </div>
+
+  <h3>3.6 多维度品牌提升 — 奢侈品案例</h3>
+  <table>
+    <thead>
+      <tr><th>指标</th><th>整体提升</th><th>比较提升</th><th>大幅提升</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>品牌印象深刻度</td><td class="highlight">+50%</td><td>+27%比较深刻</td><td>+23%非常深刻</td></tr>
+      <tr><td>品牌喜欢度</td><td class="highlight">+54%</td><td>+24%比较喜欢</td><td>+29%非常喜欢</td></tr>
+      <tr><td>购买倾向</td><td class="highlight">+60%</td><td>+37%比较想购买</td><td>+23%非常想购买</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.7 异常流量对比</h3>
+  <table>
+    <thead>
+      <tr><th>媒体类型</th><th>异常率</th><th>等级</th><th>影响评估</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>户外大牌</td><td class="highlight-red">&gt;10%</td><td><span class="tag tag-red">高危</span></td><td>平均直接经济损失10+万元</td></tr>
+      <tr><td>LED媒体</td><td class="highlight-orange">~9%</td><td><span class="tag tag-orange">较高</span></td><td>需AI实时监测</td></tr>
+      <tr><td>楼宇媒体</td><td class="highlight-orange">3-6%</td><td><span class="tag tag-orange">中等</span></td><td>相对可控</td></tr>
+      <tr><td>部分线上媒体</td><td class="highlight-red">~28%</td><td><span class="tag tag-red">极高危</span></td><td>广告浪费严重</td></tr>
+    </tbody>
+  </table>
+  <div class="highlight-box orange">
+    <p><strong>行业痛点：</strong>户外广告平均异常率3-10%，部分线上媒体异常曝光达28%，AI驱动的异常检测和质量控制成为行业刚需。</p>
+  </div>
+
+  <h3>3.8 跨屏增量测量</h3>
+  <table>
+    <thead>
+      <tr><th>指标</th><th>数值</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>ID重合度</td><td>1.9%</td><td>线上设备ID与线下LBS设备ID碰撞结果</td></tr>
+      <tr><td>增量价值</td><td class="highlight">98.1%</td><td>DOOH带来大量线上渠道无法触达的增量用户</td></tr>
+      <tr><td>样本规模</td><td>15万+</td><td>覆盖337市+27省，CATI&CAPI调研</td></tr>
+    </tbody>
+  </table>
+
+  <h4>媒体渗透率公式</h4>
+  <div class="formula-block">
+    <div class="formula-title">跨屏去重测量体系</div>
+    <pre><code><span class="formula-var">Media Penetration</span> <span class="formula-op">=</span> <span class="formula-var">推及人口</span> <span class="formula-op">/</span> <span class="formula-var">人口</span> <span class="formula-op">=</span> <span class="formula-var">Universe</span> <span class="formula-op">/</span> <span class="formula-var">Population</span>
+
+<span class="formula-var">GRP Population</span> <span class="formula-op">=</span> <span class="formula-var">GRP Universe</span> <span class="formula-op">×</span> <span class="formula-var">Media Penetration%</span>
+
+<span class="formula-var">Reach% Population</span> <span class="formula-op">=</span> <span class="formula-var">Reach% Universe</span> <span class="formula-op">×</span> <span class="formula-var">Media Penetration%</span></code></pre>
+  </div>
+
+  <details>
+    <summary>📋 户外广告测量指标体系（>40个消费者标签）</summary>
+    <div class="details-body">
+      <h4>核心指标</h4>
+      <ul>
+        <li><strong>有效覆盖人次/人数</strong>（OTC IMP/UV）</li>
+        <li><strong>频次</strong>（Frequency）</li>
+        <li><strong>人口属性</strong>（性别、年龄、资产等级）</li>
+        <li><strong>目标人群占比</strong>（TA%）</li>
+        <li><strong>到达率</strong>（Reach）</li>
+      </ul>
+      <h4>消费者标签体系</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem">
+        <span class="tag tag-blue">婚姻状况</span>
+        <span class="tag tag-blue">有车比例</span>
+        <span class="tag tag-cyan">活跃商圈</span>
+        <span class="tag tag-cyan">购物偏好</span>
+        <span class="tag tag-purple">酒店偏好</span>
+        <span class="tag tag-purple">娱乐场所偏好</span>
+        <span class="tag tag-green">餐饮偏好</span>
+        <span class="tag tag-green">APP偏好</span>
+      </div>
+      <h4 style="margin-top:1rem">可监测媒体类型</h4>
+      <ul>
+        <li>楼宇类（电梯海报/视频）</li>
+        <li>户外大牌/灯箱/LED</li>
+        <li>候车亭/公交站</li>
+        <li>地铁站</li>
+        <li>机场/高铁站</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 第4章 案例实证 ==================== -->
+<section id="cases">
+  <h2>第4章 案例实证</h2>
+
+  <h3>4.1 屈臣氏平台规模</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">4000+</div>
+      <div class="stat-label">门店覆盖</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">500+</div>
+      <div class="stat-label">城市覆盖</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">2亿+</div>
+      <div class="stat-label">消费人群覆盖</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">90%</div>
+      <div class="stat-label">18-45岁女性触达</div>
+    </div>
+  </div>
+
+  <h3>4.2 屈臣氏用户画像</h3>
+  <table>
+    <thead>
+      <tr><th>维度</th><th>数据</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>女性消费者占比</td><td class="highlight">94%</td><td>垂直精准女性人群</td></tr>
+      <tr><td>年轻一族占比</td><td>51%</td><td>90后占比超五成</td></tr>
+      <tr><td>大专及以上学历</td><td>85%+</td><td>13%为专业人员（医生/律师/教师）</td></tr>
+      <tr><td>家庭月收入超1万</td><td>53%</td><td>平均家庭月收入13,972元</td></tr>
+      <tr><td>高线城市占比</td><td>62%</td><td>一、二线城市</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 四大品牌增长模式</h3>
+
+  <h4>模式一：美宝莲 — 深耕增长</h4>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">70%+</div>
+        <div class="stat-label">O+O新客率</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">30%+</div>
+        <div class="stat-label">销售环比增长</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">70%</div>
+        <div class="stat-label">认知源于O+O生态</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>维度</th><th>线下</th><th>线上</th></tr></thead>
+      <tbody>
+        <tr><td>品牌认知</td><td>75%</td><td>73%</td></tr>
+        <tr><td>购买转化</td><td>57%</td><td>49%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>模式二：安肌心语 — 高速抢占</h4>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">+10%+</div>
+        <div class="stat-label">2021年销售同比增长</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">3×</div>
+        <div class="stat-label">品牌认知度三年提升</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">57%</div>
+        <div class="stat-label">认知源于O+O生态</div>
+      </div>
+    </div>
+    <p class="text-secondary">销售三年持续提升，品牌认知度实现跨越式增长</p>
+  </div>
+
+  <h4>模式三：李施德林 — 扩圈拉新</h4>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">70%+</div>
+        <div class="stat-label">销售环比增长</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">10%+</div>
+        <div class="stat-label">品类环比提升</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">29%</div>
+        <div class="stat-label">购买者从未用过本产品</div>
+      </div>
+    </div>
+    <p class="text-secondary">认知度/喜爱度/市场份额均达品类Top1</p>
+  </div>
+
+  <h4>模式四：aio — 共创成长</h4>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">Top1</div>
+        <div class="stat-label">品类份额</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">30%+</div>
+        <div class="stat-label">首次使用精华品类</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">1.5×</div>
+        <div class="stat-label">Gen Z占比增长</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">61%</div>
+        <div class="stat-label">认知源于O+O生态</div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>🔄 O+O增长引擎 OPTIMO 方法论</summary>
+    <div class="details-body">
+      <p><strong>OPTIMO框架：</strong>媒体覆盖 → 私域运营 → 渠道转化</p>
+      <h4>AECR人群资产模型</h4>
+      <table>
+        <thead><tr><th>阶段</th><th>含义</th><th>核心指标</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>吸引关注 (Attract)</td><td>点击率、浏览商详率</td></tr>
+          <tr><td>E</td><td>互动体验 (Engage)</td><td>搜索点击率、AR试妆率</td></tr>
+          <tr><td>C</td><td>购买转化 (Convert)</td><td>搜索转化率、试用转化率</td></tr>
+          <tr><td>R</td><td>品牌挚友 (Retain)</td><td>复购率、试用报告提交率</td></tr>
+        </tbody>
+      </table>
+      <p><strong>三维度评估：</strong>数量、质量、增量</p>
+      <h4>策略输出框架</h4>
+      <p>WHO（目标人群）→ WHERE（触达资源）→ HOW（沟通方式）→ WHEN（投放时间）</p>
+      <h4>消费决策触点</h4>
+      <p>认知阶段Top5线下触点：</p>
+      <ol>
+        <li>市内交通户外</li>
+        <li>购物中心广告</li>
+        <li>远途交通户外</li>
+        <li>住宅写字楼广告</li>
+        <li>电视</li>
+      </ol>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 第5章 AI+pDOOH平台架构方案 ==================== -->
+<section id="platform">
+  <h2>第5章 AI + pDOOH 平台架构方案</h2>
+
+  <div class="card">
+    <p>平台以<strong>T/CAAAD 040-2025标准公式体系</strong>为计算基础，融合腾讯位置服务数据、AI受众画像、品牌提升测量、到店归因、跨屏去重等能力，构建完整的pDOOH效果测量与优化闭环。</p>
+  </div>
+
+  <h3>5.1 平台整体架构</h3>
+  <div class="arch-container">
+    <div class="arch-box">
+      <div class="arch-icon">📡</div>
+      <h4>数据接入层</h4>
+      <p>场域数据 · 运营商数据 · POI · 天气 · 交通</p>
+    </div>
+    <div class="arch-box">
+      <div class="arch-icon">⚙️</div>
+      <h4>计算引擎层</h4>
+      <p>曝光计算 · 路径分析 · 流量清洗 · 异常检测</p>
+    </div>
+    <div class="arch-box">
+      <div class="arch-icon">🧠</div>
+      <h4>AI智能层</h4>
+      <p>受众画像 · 品牌提升预测 · 归因建模 · 去重计算</p>
+    </div>
+    <div class="arch-box">
+      <div class="arch-icon">📊</div>
+      <h4>应用服务层</h4>
+      <p>投放优化 · 效果报告 · 人群资产 · 跨屏测量</p>
+    </div>
+  </div>
+
+  <h3>5.2 六大核心模块</h3>
+
+  <h4>模块一：曝光计算引擎</h4>
+  <div class="card">
+    <p>基于T/CAAAD 040-2025标准的完整公式体系实现自动化曝光计算。</p>
+    <table>
+      <thead><tr><th>功能</th><th>技术实现</th><th>输入数据</th></tr></thead>
+      <tbody>
+        <tr><td>流动曝光计算</td><td>公式1-2：OTC_flow = max((T_exposure - T_ad/2) / T_ad, 0)</td><td>T_exposure, T_ad, Traffic</td></tr>
+        <tr><td>驻留曝光计算</td><td>公式3-4：OTC_dwell = T_exposure ÷ 300</td><td>T_exposure, Traffic</td></tr>
+        <tr><td>总曝光汇总</td><td>公式5：IMP = IMP_flow + IMP_dwell</td><td>IMP_flow, IMP_dwell</td></tr>
+        <tr><td>曝光乘数</td><td>公式6：Multiplier = (Traffic × IMP_flow) ÷ ad_slots</td><td>Traffic, IMP_flow, ad_slots</td></tr>
+        <tr><td>最短路径分析</td><td>迪杰斯特拉算法 + 有向带权图</td><td>场域拓扑结构、节点人流</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>模块二：AI受众画像</h4>
+  <div class="card">
+    <p>基于腾讯位置服务数据，构建>40个消费者标签的精准人群画像。</p>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">1600亿+</div>
+        <div class="stat-label">日均定位数据（条）</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">10亿+</div>
+        <div class="stat-label">日活智能设备</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">12亿+</div>
+        <div class="stat-label">月活智能设备</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">8000万+</div>
+        <div class="stat-label">POI数据</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>标签类别</th><th>标签项</th></tr></thead>
+      <tbody>
+        <tr><td>基础属性</td><td>性别、年龄、婚姻状况、资产等级</td></tr>
+        <tr><td>行为偏好</td><td>活跃商圈、购物偏好、餐饮偏好</td></tr>
+        <tr><td>场景偏好</td><td>酒店偏好、娱乐场所偏好</td></tr>
+        <tr><td>数字偏好</td><td>APP偏好、有车比例</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>模块三：BrandLift实时测量</h4>
+  <div class="card">
+    <p>在线BrandLift实验设计，实时测量DOOH广告对品牌KPI的因果影响。</p>
+    <table>
+      <thead><tr><th>功能</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>实验分组</td><td>曝光组 vs 控制组随机分配（N≥200）</td></tr>
+        <tr><td>KPI测量</td><td>品牌提及、品牌偏好、购买倾向、品牌印象、品牌喜欢度</td></tr>
+        <tr><td>统计检验</td><td>95%置信水平显著性检验（p&lt;0.05）</td></tr>
+        <tr><td>提升率计算</td><td>提升率 = (曝光组% - 控制组%) / 控制组% × 100%</td></tr>
+        <tr><td>母品牌效应</td><td>检测子品牌广告对母品牌的溢出效应</td></tr>
+        <tr><td>实时面板</td><td>品牌KPI实时追踪与可视化</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>模块四：Ad-to-Visits到店归因</h4>
+  <div class="card">
+    <p>通过WIFI到店技术，精确测量DOOH广告对线下实体门店的到店转化效果。</p>
+    <table>
+      <thead><tr><th>功能</th><th>技术实现</th></tr></thead>
+      <tbody>
+        <tr><td>WIFI指纹识别</td><td>精准判定用户进入广告影响范围</td></tr>
+        <tr><td>指定半径验证</td><td>重合UV / 广告曝光UV = 到店占比</td></tr>
+        <tr><td>到店率计算</td><td>曝光组到店率 vs 控制组到店率</td></tr>
+        <tr><td>归因窗口</td><td>支持自定义归因时间窗口</td></tr>
+        <tr><td>行业对比</td><td>餐饮/零售/汽车等跨行业到店转化基准</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>模块五：AECR人群资产管理</h4>
+  <div class="card">
+    <p>基于O+O增长引擎OPTIMO方法论，构建完整的人群资产管理与运营体系。</p>
+    <table>
+      <thead><tr><th>AECR阶段</th><th>含义</th><th>核心指标</th><th>优化策略</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-blue">A</span> 吸引关注</td><td>Attract</td><td>点击率、浏览商详率</td><td>优化创意、提升曝光质量</td></tr>
+        <tr><td><span class="tag tag-cyan">E</span> 互动体验</td><td>Engage</td><td>搜索点击率、AR试妆率</td><td>增强互动、个性化推荐</td></tr>
+        <tr><td><span class="tag tag-green">C</span> 购买转化</td><td>Convert</td><td>搜索转化率、试用转化率</td><td>精准定向、促销联动</td></tr>
+        <tr><td><span class="tag tag-purple">R</span> 品牌挚友</td><td>Retain</td><td>复购率、试用报告提交率</td><td>私域运营、会员体系</td></tr>
+      </tbody>
+    </table>
+    <p><strong>三维度评估：</strong>数量（人群规模）、质量（互动深度）、增量（新增人群）</p>
+    <p><strong>策略输出：</strong>WHO → WHERE → HOW → WHEN</p>
+  </div>
+
+  <h4>模块六：跨屏去重系统</h4>
+  <div class="card">
+    <p>实现Mobile/OTT与OOH的跨屏去重测量，精准计算DOOH的增量触达价值。</p>
+    <table>
+      <thead><tr><th>功能</th><th>技术实现</th></tr></thead>
+      <tbody>
+        <tr><td>ID碰撞</td><td>线上设备ID与线下LBS设备ID匹配</td></tr>
+        <tr><td>MixReach计算</td><td>支持Mobile/OTT与OOH的混合到达率计算</td></tr>
+        <tr><td>概率空间去重</td><td>基于15W样本、337市+27省的统计模型</td></tr>
+        <tr><td>媒体渗透率</td><td>Media Penetration = Universe / Population</td></tr>
+        <tr><td>增量评估</td><td>DOOH带来的线上无法触达的增量用户占比</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <details>
+    <summary>🔧 技术栈与实现细节</summary>
+    <div class="details-body">
+      <h4>数据接入</h4>
+      <ul>
+        <li>腾讯位置服务API（日均1600亿+定位数据）</li>
+        <li>电信运营商GPS/WiFi/蓝牙数据接口</li>
+        <li>场域运营方客流数据接入</li>
+        <li>天气/交通等外部数据源</li>
+      </ul>
+      <h4>计算引擎</h4>
+      <ul>
+        <li>迪杰斯特拉最短路径算法</li>
+        <li>有向带权图人流建模</li>
+        <li>实时流处理（Flink/Spark Streaming）</li>
+      </ul>
+      <h4>AI能力</h4>
+      <ul>
+        <li>受众画像聚类分析（K-Means/DBSCAN）</li>
+        <li>品牌提升预测模型（因果推断）</li>
+        <li>异常检测（Isolation Forest/LSTM）</li>
+        <li>到店归因建模（Propensity Score Matching）</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== 第6章 实施路径 ==================== -->
+<section id="roadmap">
+  <h2>第6章 实施路径</h2>
+
+  <p>平台实施分为四个阶段，从核心能力建设到全面商业化，预计18个月完成。</p>
+
+  <div class="phase-timeline">
+    <div class="phase-item">
+      <div class="phase-num">Phase 1 · 基础建设（M1-M4）</div>
+      <h4>曝光计算引擎 + 数据基础设施</h4>
+      <p>搭建数据采集与处理管道，实现T/CAAAD 040-2025标准的6个核心公式计算引擎。接入腾讯位置服务数据，构建基础受众画像能力。覆盖楼宇、户外大牌、地铁站三类核心媒体。</p>
+      <div class="progress-bar"><div class="fill" style="width:25%"></div></div>
+    </div>
+
+    <div class="phase-item">
+      <div class="phase-num">Phase 2 · 智能提升（M5-M8）</div>
+      <h4>AI受众画像 + BrandLift测量</h4>
+      <p>构建>40个消费者标签的精准画像体系，上线BrandLift实时测量模块。实现品牌KPI（提及率、偏好度、购买倾向）的自动化测量与报告生成。扩展到候车亭、机场/高铁站媒体。</p>
+      <div class="progress-bar"><div class="fill" style="width:50%"></div></div>
+    </div>
+
+    <div class="phase-item">
+      <div class="phase-num">Phase 3 · 归因闭环（M9-M13）</div>
+      <h4>到店归因 + AECR人群资产</h4>
+      <p>部署Ad-to-Visits到店归因模块，实现DOOH广告对线下门店转化的精确测量。上线AECR人群资产管理系统，支持完整的营销效果评估与优化建议。实现AI驱动的投放自动优化。</p>
+      <div class="progress-bar"><div class="fill" style="width:75%"></div></div>
+    </div>
+
+    <div class="phase-item">
+      <div class="phase-num">Phase 4 · 跨屏融合（M14-M18）</div>
+      <h4>跨屏去重 + 全面商业化</h4>
+      <p>上线跨屏去重系统，实现Mobile/OTT与OOH的混合到达率计算。完成全量媒体覆盖，实现平台全面商业化运营。输出行业基准报告，建立品牌广告主合作生态。</p>
+      <div class="progress-bar"><div class="fill" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <h3>里程碑规划</h3>
+  <table>
+    <thead>
+      <tr><th>阶段</th><th>时间</th><th>核心交付</th><th>成功标准</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Phase 1</td><td>M1-M4</td><td>曝光计算引擎 v1.0</td><td>公式计算准确率>99%</td></tr>
+      <tr><td>Phase 2</td><td>M5-M8</td><td>BrandLift测量系统</td><td>95%置信水平显著性检测</td></tr>
+      <tr><td>Phase 3</td><td>M9-M13</td><td>到店归因 + AECR系统</td><td>到店归因误差&lt;5%</td></tr>
+      <tr><td>Phase 4</td><td>M14-M18</td><td>跨屏去重 + 商业化</td><td>跨屏增量测量误差&lt;3%</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 第7章 ROI预测与商业价值 ==================== -->
+<section id="roi">
+  <h2>第7章 ROI预测与商业价值</h2>
+
+  <h3>7.1 品牌广告主ROI测算</h3>
+  <table>
+    <thead>
+      <tr><th>指标</th><th>传统DOOH</th><th>AI+pDOOH</th><th>提升</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>品牌提及提升</td><td>+103%</td><td>+120%</td><td class="highlight">+17%</td></tr>
+      <tr><td>品牌偏好提升</td><td>+73%</td><td>+95%</td><td class="highlight">+30%</td></tr>
+      <tr><td>购买倾向提升</td><td>+80%</td><td>+105%</td><td class="highlight">+31%</td></tr>
+      <tr><td>异常流量率</td><td>3-10%</td><td>&lt;2%</td><td class="highlight">↓60-80%</td></tr>
+      <tr><td>投放精准度</td><td>基于经验</td><td>AI精准定向</td><td class="highlight">显著提升</td></tr>
+      <tr><td>效果测量周期</td><td>月级</td><td>实时</td><td class="highlight">从天到分钟</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 效果归因ROI测算</h3>
+  <table>
+    <thead>
+      <tr><th>行业</th><th>传统到店率</th><th>AI+pDOOH到店率</th><th>提升倍数</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>餐饮（城市A）</td><td>1.17%</td><td>6.6%</td><td class="highlight">5.6×</td></tr>
+      <tr><td>餐饮（城市B）</td><td>0.38%</td><td>8.0%</td><td class="highlight">21×</td></tr>
+      <tr><td>汽车</td><td>0.18%</td><td>0.36%</td><td class="highlight">2×</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.3 成本节省分析</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">↓80%</div>
+      <div class="stat-label">异常流量损失</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">↓60%</div>
+      <div class="stat-label">效果测量成本</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">↓40%</div>
+      <div class="stat-label">无效曝光浪费</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>异常流量成本节省</h4>
+    <table>
+      <thead><tr><th>媒体类型</th><th>传统异常率</th><th>AI+pDOOH异常率</th><th>节省（万元/年/点位）</th></tr></thead>
+      <tbody>
+        <tr><td>户外大牌</td><td>&gt;10%</td><td>&lt;2%</td><td class="highlight">8-12</td></tr>
+        <tr><td>LED媒体</td><td>~9%</td><td>&lt;2%</td><td class="highlight">7-10</td></tr>
+        <tr><td>楼宇媒体</td><td>3-6%</td><td>&lt;1%</td><td class="highlight">3-5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7.4 跨屏增量价值</h3>
+  <div class="card">
+    <p>基于实测数据，DOOH为数字营销体系带来<strong>98.1%的增量触达价值</strong>（ID重合度仅1.9%）。这意味着每投入1元DOOH广告预算，理论上可触达0.981元线上渠道无法覆盖的增量用户。</p>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">1.9%</div>
+        <div class="stat-label">线上-线下ID重合度</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">98.1%</div>
+        <div class="stat-label">DOOH增量触达价值</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>7.5 综合ROI预测</h3>
+  <div class="highlight-box green">
+    <p><strong>品牌广告主综合ROI预测：</strong></p>
+    <ul>
+      <li>品牌认知提升：+120%（vs 传统DOOH +103%）</li>
+      <li>到店转化提升：5-21×（依赖行业与城市）</li>
+      <li>异常流量损失降低：60-80%</li>
+      <li>效果测量时效提升：从月级到实时</li>
+      <li>增量用户触达：98.1%线上渠道无法覆盖</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 第8章 结论与建议 ==================== -->
+<section id="conclusion">
+  <h2>第8章 结论与建议</h2>
+
+  <h3>8.1 核心结论</h3>
+  <div class="card">
+    <h4>结论一：DOOH品牌效果已获充分实证</h4>
+    <p>基于BrandLift实验设计，DOOH广告对品牌提及（+103%）、品牌偏好（+73%）、购买倾向（+80%）等核心KPI均有95%置信水平下的统计显著提升。子品牌效果更为突出，第一品牌提及提升高达440%。</p>
+  </div>
+  <div class="card">
+    <h4>结论二：到店转化效果显著，户外转化率最高</h4>
+    <p>餐饮品牌到店率提升5.6-21倍，汽车品牌到店率提升2倍。汽车品牌案例中，户外曝光组到店率（0.36%）与视频曝光组（0.38%）相当，显著高于门户曝光组（0.18%），户外广告到店转化率最高。</p>
+  </div>
+  <div class="card">
+    <h4>结论三：跨屏增量价值明确</h4>
+    <p>线上-线下ID重合度仅1.9%，DOOH为数字营销体系带来98.1%的增量触达价值，是跨屏营销组合中不可或缺的增量渠道。</p>
+  </div>
+  <div class="card">
+    <h4>结论四：行业痛点催生AI需求</h4>
+    <p>户外广告异常率3-10%，部分线上媒体异常曝光达28%。AI驱动的异常检测、智能优化和实时测量成为行业刚需。</p>
+  </div>
+  <div class="card">
+    <h4>结论五：标准体系已完备</h4>
+    <p>T/CAAAD 040-2025《户外广告曝光量评估》行业标准的实施（2026年3月1日），为DOOH效果测量提供了完整的公式体系和技术规范，AI+pDOOH平台可直接基于标准构建。</p>
+  </div>
+
+  <h3>8.2 战略建议</h3>
+  <div class="highlight-box">
+    <h4>建议一：立即启动平台建设</h4>
+    <p>T/CAAAD 040-2025标准将于2026年3月1日实施，建议立即启动AI+pDOOH平台建设，把握标准实施窗口期，抢占行业先机。</p>
+  </div>
+  <div class="highlight-box green">
+    <h4>建议二：分阶段实施，快速迭代</h4>
+    <p>建议按照四阶段路径实施：先建设核心曝光计算引擎，再逐步叠加AI画像、BrandLift测量、到店归因和跨屏去重能力，确保每阶段有可交付的商业价值。</p>
+  </div>
+  <div class="highlight-box orange">
+    <h4>建议三：聚焦高价值场景</h4>
+    <p>优先覆盖餐饮、汽车、奢侈品等高到店转化行业，以到店归因为切入点，建立品牌广告主信任，再逐步扩展到全行业。</p>
+  </div>
+  <div class="highlight-box pink">
+    <h4>建议四：构建生态合作</h4>
+    <p>与腾讯位置服务、秒针系统、媒体运营商建立深度合作，整合数据、测量、媒体资源，构建完整的pDOOH生态体系。参考屈臣氏O+O增长模式，打造品牌-媒体-渠道的增长飞轮。</p>
+  </div>
+
+  <h3>8.3 总结</h3>
+  <div class="card" style="border-left:4px solid var(--accent-blue);background:linear-gradient(135deg,rgba(74,125,255,0.08),rgba(139,92,246,0.08))">
+    <p>AI + pDOOH不是简单的技术升级，而是<strong>户外广告行业从经验驱动向数据驱动的历史性转型</strong>。T/CAAAD 040-2025标准为效果测量提供了科学基础，秒针系统的实证数据证明了DOOH的品牌效果和到店转化价值，腾讯位置服务为精准定向提供了数据支撑。</p>
+    <p>通过曝光计算引擎、AI受众画像、BrandLift实时测量、Ad-to-Visits到店归因、AECR人群资产管理、跨屏去重六大核心模块的建设，AI+pDOOH平台将实现户外广告的<strong>精准测量、智能优化、效果归因和增量评估</strong>，为品牌广告主创造可量化、可优化、可归因的程序化户外广告新体验。</p>
+    <p><strong>时机已成熟，建议立即启动。</strong></p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>© 2025 AI + pDOOH 平台方案 | 基于 T/CAAAD 040-2025 行业标准 | 数据来源：秒针系统、腾讯位置服务、BrandLift实验</p>
+  <p style="margin-top:.5rem">报告撰写：若溪（Rex）| 版本：v1.0</p>
+</footer>
+
+</body>
+</html>

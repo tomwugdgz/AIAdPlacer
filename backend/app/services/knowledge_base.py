@@ -390,6 +390,121 @@ class KnowledgeManager:
         stats = self._load_stats()
         return list(stats.get("by_tool", {}).keys())
 
+    def export_by_date(self, date_str: str) -> list[dict]:
+        """
+        按日期批量导出知识库记录
+
+        Args:
+            date_str: 日期字符串 (YYYY-MM-DD)
+
+        Returns:
+            该日期所有记录列表
+        """
+        return self.list_by_date(date_str)
+
+    def export_by_tool(self, tool_name: str) -> list[dict]:
+        """
+        按工具名批量导出知识库记录
+
+        Args:
+            tool_name: 工具名
+
+        Returns:
+            该工具所有记录列表
+        """
+        return self.list_by_tool(tool_name)
+
+    def cleanup_old_records(self, days: int = 90) -> dict:
+        """
+        清理指定天数前的知识库记录
+
+        Args:
+            days: 保留天数（默认 90 天）
+
+        Returns:
+            清理统计
+        """
+        from datetime import timedelta
+        cutoff = (date.today() - timedelta(days=days)).isoformat()
+        index = self._load_index()
+        to_delete = []
+        for record_id, meta in index.items():
+            if meta["date"] < cutoff:
+                to_delete.append((record_id, meta))
+
+        for record_id, meta in to_delete:
+            # 删除文件
+            file_path = self.root / meta["file"]
+            if file_path.exists():
+                data = json.loads(file_path.read_text("utf-8"))
+                if isinstance(data, list):
+                    # 从数组中移除该记录
+                    new_data = [item for item in data if item.get("id") != record_id]
+                    if new_data:
+                        file_path.write_text(json.dumps(new_data, ensure_ascii=False, indent=2), "utf-8")
+                    else:
+                        file_path.unlink()
+                else:
+                    file_path.unlink()
+            # 删除索引
+            del index[record_id]
+
+        # 保存更新后的索引
+        self.index_file.write_text(json.dumps(index, ensure_ascii=False, indent=2), "utf-8")
+
+        return {
+            "status": "cleaned",
+            "deleted_count": len(to_delete),
+            "cutoff_date": cutoff,
+        }
+
+    def rebuild_index(self) -> dict:
+        """
+        重建知识库索引（从文件系统扫描）
+
+        Returns:
+            重建统计
+        """
+        new_index = {}
+        total_files = 0
+        total_records = 0
+
+        if self.root.exists():
+            for json_file in self.root.rglob("*.json"):
+                if json_file.name in ("index.json", "stats.json"):
+                    continue
+                total_files += 1
+                try:
+                    data = json.loads(json_file.read_text("utf-8"))
+                    if isinstance(data, list):
+                        for item in data:
+                            if item.get("id"):
+                                new_index[item["id"]] = {
+                                    "tool": item.get("tool", ""),
+                                    "date": item.get("meta", {}).get("date", ""),
+                                    "file": str(json_file.relative_to(self.root)),
+                                    "arguments": item.get("arguments", {}),
+                                }
+                                total_records += 1
+                    elif isinstance(data, dict) and data.get("id"):
+                        new_index[data["id"]] = {
+                            "tool": data.get("tool", ""),
+                            "date": data.get("meta", {}).get("date", ""),
+                            "file": str(json_file.relative_to(self.root)),
+                            "arguments": data.get("arguments", {}),
+                        }
+                        total_records += 1
+                except (json.JSONDecodeError, KeyError):
+                    continue
+
+        self.index_file.write_text(json.dumps(new_index, ensure_ascii=False, indent=2), "utf-8")
+
+        return {
+            "status": "rebuilt",
+            "total_files": total_files,
+            "total_records": total_records,
+        }
+
 
 # 全局单例
 kb = KnowledgeManager()
