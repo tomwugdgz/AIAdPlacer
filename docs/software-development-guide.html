@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>软件开发全流程指南</title>
+  <style>
+    * { margin:0; padding:0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #0a0e1a; color: #e0e6f0; line-height: 1.8;
+      overflow-x: hidden;
+    }
+    .bg-orb { position: fixed; border-radius:50%; filter:blur(120px); opacity:.1; pointer-events:none; z-index:0; }
+    .bg-orb-1 { width:500px; height:500px; background:#6366f1; top:-150px; left:-100px; }
+    .bg-orb-2 { width:400px; height:400px; background:#06b6d4; bottom:-100px; right:-50px; }
+    .container { max-width: 1000px; margin:0 auto; padding: 40px 24px; position:relative; z-index:1; }
+
+    /* Hero */
+    .hero { text-align:center; padding: 50px 20px 36px; background: linear-gradient(135deg, rgba(99,102,241,.1), rgba(6,182,212,.08)); border-radius:16px; margin-bottom:40px; border:1px solid rgba(99,102,241,.15); }
+    .hero h1 { font-size:2em; font-weight:800; background:linear-gradient(135deg,#818cf8,#22d3ee); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
+    .hero .sub { color:#94a3b8; font-size:1em; }
+    .toc { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+    .toc a { padding:6px 14px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:#94a3b8; text-decoration:none; font-size:.85em; transition:all .2s; }
+    .toc a:hover { background:rgba(99,102,241,.15); color:#c4b5fd; border-color:rgba(99,102,241,.3); }
+
+    /* Section */
+    .section { margin-bottom: 44px; }
+    .section-title { font-size:1.4em; font-weight:700; margin-bottom:18px; padding-bottom:10px; border-bottom:2px solid rgba(99,102,241,.25); display:flex; align-items:center; gap:10px; }
+    .section-title .num { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#06b6d4); color:#fff; font-size:.8em; font-weight:700; }
+
+    /* Cards */
+    .card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:20px 24px; margin-bottom:16px; transition:all .2s; }
+    .card:hover { border-color:rgba(99,102,241,.25); }
+    .card h3 { color:#818cf8; font-size:1.05em; margin-bottom:10px; }
+    .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+
+    /* Tables */
+    .tbl { width:100%; border-collapse:collapse; margin:12px 0; font-size:.9em; }
+    .tbl th { background:rgba(99,102,241,.1); color:#a5b4fc; padding:10px 14px; text-align:left; border-bottom:1px solid rgba(99,102,241,.15); }
+    .tbl td { padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
+    .tbl tr:hover td { background:rgba(255,255,255,.03); }
+
+    /* Flow */
+    .flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background:rgba(255,255,255,.03); border-radius:12px; margin:12px 0; }
+    .flow .step { padding:8px 16px; border-radius:8px; background:rgba(99,102,241,.12); color:#a5b4fc; font-size:.88em; font-weight:600; white-space:nowrap; }
+    .flow .arrow { color:#64748b; font-size:1.1em; }
+
+    /* Tree */
+    .tree { font-family:'SF Mono','Fira Code',monospace; font-size:.88em; line-height:2; padding:16px; background:rgba(0,0,0,.3); border-radius:10px; overflow-x:auto; }
+    .tree .c1 { color:#c084fc; }
+    .tree .c2 { color:#60a5fa; }
+    .tree .c3 { color:#34d399; }
+    .tree .c4 { color:#fbbf24; }
+
+    /* Improvements */
+    .imp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+    .imp-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px; transition:all .2s; }
+    .imp-card:hover { border-color:rgba(234,179,8,.3); transform:translateY(-2px); }
+    .imp-card .imp-title { font-weight:700; color:#fbbf24; margin-bottom:8px; font-size:.95em; }
+    .imp-card .imp-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; font-size:.85em; }
+    .imp-card .imp-old { color:#94a3b8; }
+    .imp-card .imp-new { color:#4ade80; }
+
+    /* Tag */
+    .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:.75em; font-weight:600; margin-right:4px; }
+    .tag-purple { background:rgba(139,92,246,.15); color:#a78bfa; }
+    .tag-blue { background:rgba(59,130,246,.15); color:#60a5fa; }
+    .tag-green { background:rgba(34,197,94,.15); color:#4ade80; }
+    .tag-amber { background:rgba(245,158,11,.15); color:#fbbf24; }
+
+    @media(max-width:640px) {
+      .hero h1 { font-size:1.5em; }
+      .card-grid,.imp-grid { grid-template-columns:1fr; }
+      .imp-card .imp-row { grid-template-columns:1fr; }
+      .flow { flex-direction:column; align-items:stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>🛠️ 软件开发全流程指南</h1>
+      <div class="sub">系统化 · 结构化 · 可落地 · 含改进空间分析</div>
+      <div class="toc">
+        <a href="#s1">1. 项目规划</a>
+        <a href="#s2">2. 系统设计</a>
+        <a href="#s3">3. 功能逻辑图</a>
+        <a href="#s4">4. 编码实现</a>
+        <a href="#s5">5. 测试</a>
+        <a href="#s6">6. 部署运维</a>
+        <a href="#s7">7. 改进空间</a>
+      </div>
+    </div>
+
+    <!-- S1: 项目规划与需求分析 -->
+    <div class="section" id="s1">
+      <div class="section-title"><span class="num">1</span> 项目规划与需求分析</div>
+
+      <div class="card">
+        <h3>📋 项目规划</h3>
+        <table class="tbl">
+          <tr><th>项目</th><th>说明</th></tr>
+          <tr><td>目标定义</td><td>明确核心问题、成功标准（KPI/OKR）</td></tr>
+          <tr><td>范围界定</td><td>确定 In Scope / Out Scope</td></tr>
+          <tr><td>时间规划</td><td>里程碑、迭代周期（Sprint 规划）</td></tr>
+          <tr><td>资源评估</td><td>人力（产品/研发/测试）、预算、外部依赖</td></tr>
+          <tr><td>风险评估</td><td>技术/进度/人员风险 + 应对方案</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>🔍 需求分析流程</h3>
+        <div class="flow">
+          <span class="step">客户沟通</span><span class="arrow">→</span>
+          <span class="step">需求采集</span><span class="arrow">→</span>
+          <span class="step">需求梳理</span><span class="arrow">→</span>
+          <span class="step">需求确认</span><span class="arrow">→</span>
+          <span class="step">需求文档</span>
+        </div>
+        <table class="tbl">
+          <tr><th>步骤</th><th>方法</th><th>产出</th></tr>
+          <tr><td>需求采集</td><td>访谈、问卷、竞品分析</td><td>需求原始记录</td></tr>
+          <tr><td>需求梳理</td><td>User Story、Use Case</td><td>功能清单</td></tr>
+          <tr><td>需求确认</td><td>评审会议、原型确认</td><td>《产品功能需求逻辑图》</td></tr>
+          <tr><td>合同确认</td><td>范围、时间、费用确认</td><td>合同 / 需求确认书</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>📊 需求分级（MoSCoW 法）</h3>
+        <table class="tbl">
+          <tr><th>级别</th><th>说明</th><th>示例</th></tr>
+          <tr><td><span class="tag tag-green">Must have</span></td><td>必须有，否则项目失败</td><td>用户登录、数据持久化</td></tr>
+          <tr><td><span class="tag tag-blue">Should have</span></td><td>应该有，影响体验</td><td>批量导入、高级筛选</td></tr>
+          <tr><td><span class="tag tag-amber">Could have</span></td><td>可以有，锦上添花</td><td>深色模式、导出 PDF</td></tr>
+          <tr><td><span class="tag tag-purple">Won't have</span></td><td>本次不做，留待后续</td><td>多语言、移动端</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- S2: 系统设计 -->
+    <div class="section" id="s2">
+      <div class="section-title"><span class="num">2</span> 系统设计</div>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>🎨 原型设计工具对比</h3>
+          <table class="tbl">
+            <tr><th>工具</th><th>特点</th></tr>
+            <tr><td>Axure RP</td><td>复杂交互、高保真</td></tr>
+            <tr><td>Figma</td><td>云端协作、开发者标注友好</td></tr>
+            <tr><td>Balsamiq</td><td>快速线框图、手绘风格</td></tr>
+            <tr><td>墨刀</td><td>中文友好、模板丰富</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>🗄️ 数据库设计层次</h3>
+          <table class="tbl">
+            <tr><th>层次</th><th>说明</th></tr>
+            <tr><td>概念模型（CDM）</td><td>实体关系图（ERD）</td></tr>
+            <tr><td>逻辑模型（LDM）</td><td>属性、主键、外键</td></tr>
+            <tr><td>物理模型（PDM）</td><td>具体数据库的表结构</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🏗️ 系统架构设计维度</h3>
+        <table class="tbl">
+          <tr><th>维度</th><th>考虑要点</th></tr>
+          <tr><td>技术栈选型</td><td>语言、框架、数据库（结合团队能力）</td></tr>
+          <tr><td>架构风格</td><td>单体 / 微服务 / Serverless / 事件驱动</td></tr>
+          <tr><td>接口设计</td><td>REST / GraphQL / gRPC + OpenAPI 文档</td></tr>
+          <tr><td>安全设计</td><td>JWT/OAuth2、RBAC、数据加密、防注入</td></tr>
+          <tr><td>性能设计</td><td>Redis 缓存、CDN、读写分离、异步队列</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- S3: 产品功能需求逻辑图 -->
+    <div class="section" id="s3">
+      <div class="section-title"><span class="num">3</span> 产品功能需求逻辑图</div>
+
+      <div class="card">
+        <h3>📊 功能结构图示例（pDOOH 投放平台）</h3>
+        <div class="tree">
+<span class="c1">AIAdPlacer</span>（pDOOH 智能投放平台）
+├── <span class="c2">1. 资产管理</span>
+│   ├── 1.1 屏幕管理（CRUD + 地图标注）
+│   ├── 1.2 媒体资源（道闸/单元门/门禁）
+│   └── 1.3 客户通讯录
+├── <span class="c2">2. 投放管理</span>
+│   ├── 2.1 创建投放计划（AI 辅助）
+│   ├── 2.2 排期优化（AI 智能排期）
+│   ├── 2.3 创意管理（素材 + AI 生成）
+│   └── 2.4 投放执行与监控
+├── <span class="c2">3. 数据分析</span>
+│   ├── 3.1 效果报告（OTC 模型）
+│   ├── 3.2 人群洞察（AI 分析）
+│   ├── 3.3 竞品监控
+│   └── 3.4 归因看板
+├── <span class="c2">4. AI 能力</span>
+│   ├── 4.1 LangGraph Agent 编排
+│   ├── 4.2 MCP/A2A 工具调用
+│   └── 4.3 知识库检索（RAG）
+└── <span class="c2">5. 系统管理</span>
+    ├── 5.1 用户与权限（RBAC）
+    ├── 5.2 审计日志
+    └── 5.3 系统配置
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔄 核心业务流程（投放计划创建）</h3>
+        <div class="flow" style="flex-direction:column; align-items:stretch;">
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">① 选择目标城市/区域</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">② AI 推荐点位（人群匹配）</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">③ 确认屏幕列表 + 排期</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">④ AI 排期优化（预算/时段/覆盖）</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">⑤ 上传创意素材（AI 合规审核）</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step">⑥ 确认预算 + 提交审核</span></div>
+          <div style="color:#64748b;text-align:center;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="step" style="background:rgba(34,197,94,.15);color:#4ade80;">⑦ 审核通过 → 投放执行</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S4: 编码实现 -->
+    <div class="section" id="s4">
+      <div class="section-title"><span class="num">4</span> 编码实现</div>
+      <div class="card-grid">
+        <div class="card">
+          <h3>⚙️ 开发规范</h3>
+          <table class="tbl">
+            <tr><th>规范</th><th>说明</th></tr>
+            <tr><td>代码规范</td><td>Google Style / PEP8 / Airbnb</td></tr>
+            <tr><td>Git 规范</td><td>Conventional Commits</td></tr>
+            <tr><td>Code Review</td><td>PR 至少 1 人 Approve</td></tr>
+            <tr><td>分支策略</td><td>main / develop / feature/*</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>🛠️ 推荐技术栈</h3>
+          <table class="tbl">
+            <tr><th>层级</th><th>推荐技术</th></tr>
+            <tr><td>前端</td><td>React + TypeScript + Vite</td></tr>
+            <tr><td>后端</td><td>FastAPI / NestJS / Gin</td></tr>
+            <tr><td>数据库</td><td>PostgreSQL + Redis + ChromaDB</td></tr>
+            <tr><td>DevOps</td><td>Docker / K8s / GitHub Actions</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- S5: 测试 -->
+    <div class="section" id="s5">
+      <div class="section-title"><span class="num">5</span> 测试</div>
+      <div class="card">
+        <h3>🧪 测试金字塔</h3>
+        <div style="text-align:center;padding:16px;font-size:.9em;color:#94a3b8;">
+          <div style="margin:4px 0;padding:6px;background:rgba(139,92,246,.1);border-radius:6px;border:1px solid rgba(139,92,246,.2);">E2E 测试（少量，核心流程）</div>
+          <div style="margin:4px 0;padding:6px;background:rgba(59,130,246,.1);border-radius:6px;border:1px solid rgba(59,130,246,.2);">集成测试（API 测试、模块交互）</div>
+          <div style="margin:4px 0;padding:6px;background:rgba(34,197,94,.1);border-radius:6px;border:1px solid rgba(34,197,94,.2);">单元测试（大量，快速反馈）</div>
+        </div>
+        <table class="tbl">
+          <tr><th>类型</th><th>工具</th><th>覆盖率目标</th></tr>
+          <tr><td>单元测试</td><td>pytest / Jest</td><td>70%+</td></tr>
+          <tr><td>集成测试</td><td>pytest + httpx / Supertest</td><td>核心 API 100%</td></tr>
+          <tr><td>E2E 测试</td><td>Playwright / Cypress</td><td>核心流程 100%</td></tr>
+          <tr><td>性能测试</td><td>Locust / JMeter</td><td>关键接口压测</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- S6: 部署与运维 -->
+    <div class="section" id="s6">
+      <div class="section-title"><span class="num">6</span> 部署与运维</div>
+      <div class="card">
+        <h3>🚀 CI/CD 流水线</h3>
+        <div class="flow">
+          <span class="step">代码提交</span><span class="arrow">→</span>
+          <span class="step">自动测试</span><span class="arrow">→</span>
+          <span class="step">构建镜像</span><span class="arrow">→</span>
+          <span class="step">Staging 部署</span><span class="arrow">→</span>
+          <span class="step">人工验收</span><span class="arrow">→</span>
+          <span class="step" style="background:rgba(34,197,94,.15);color:#4ade80;">Production 发布</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>📊 运维监控体系</h3>
+        <table class="tbl">
+          <tr><th>维度</th><th>工具</th><th>指标</th></tr>
+          <tr><td>应用监控</td><td>Prometheus + Grafana</td><td>QPS、延迟、错误率</td></tr>
+          <tr><td>日志</td><td>ELK（Elasticsearch + Kibana）</td><td>结构化日志、错误追踪</td></tr>
+          <tr><td>告警</td><td>Alertmanager / PagerDuty</td><td>异常自动通知</td></tr>
+          <tr><td>链路追踪</td><td>Jaeger / Zipkin</td><td>分布式调用链</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- S7: 改进空间 -->
+    <div class="section" id="s7">
+      <div class="section-title"><span class="num">7</span> 改进空间分析</div>
+      <div class="imp-grid">
+
+        <div class="imp-card">
+          <div class="imp-title">📋 需求阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ Word/PDF 传递需求</div>
+            <div class="imp-new">✅ 在线协作（Notion / 腾讯文档）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 需求确认靠邮件</div>
+            <div class="imp-new">✅ 需求管理工具（TAPD / Jira）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 竞品分析靠人工</div>
+            <div class="imp-new">✅ 自动化竞品监控（爬虫 + AI）</div>
+          </div>
+        </div>
+
+        <div class="imp-card">
+          <div class="imp-title">🎨 设计阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 设计稿与代码脱节</div>
+            <div class="imp-new">✅ D2C（Figma to React）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 设计系统分散</div>
+            <div class="imp-new">✅ 统一 Design System</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 架构设计无量化验证</div>
+            <div class="imp-new">✅ ATAM 架构评估框架</div>
+          </div>
+        </div>
+
+        <div class="imp-card">
+          <div class="imp-title">⚙️ 开发阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 人工 Code Review</div>
+            <div class="imp-new">✅ AI Code Review（CodeRabbit）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 本地环境不一致</div>
+            <div class="imp-new">✅ Dev Container 标准化</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 依赖漏洞靠人工</div>
+            <div class="imp-new">✅ SCA 自动检测（CVE 漏洞）</div>
+          </div>
+        </div>
+
+        <div class="imp-card">
+          <div class="imp-title">🧪 测试阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 测试用例维护成本高</div>
+            <div class="imp-new">✅ AI 自动生成测试用例</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 回归测试耗时长</div>
+            <div class="imp-new">✅ 测试影响分析（只跑受影响测试）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 缺陷管理靠 Excel</div>
+            <div class="imp-new">✅ 缺陷管理 + 5 Why 根因分析</div>
+          </div>
+        </div>
+
+        <div class="imp-card">
+          <div class="imp-title">🚀 DevOps 阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 手工部署</div>
+            <div class="imp-new">✅ GitOps + Argo CD 流水线</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 监控靠人工看日志</div>
+            <div class="imp-new">✅ AIOps（异常检测 + 根因分析）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 无混沌工程实践</div>
+            <div class="imp-new">✅ Chaos Engineering（故障注入）</div>
+          </div>
+        </div>
+
+        <div class="imp-card">
+          <div class="imp-title">📈 产品运营阶段</div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 用户反馈靠客服转发</div>
+            <div class="imp-new">✅ 内置反馈组件 + AI 自动分类</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 功能使用数据缺失</div>
+            <div class="imp-new">✅ 产品分析工具（Mixpanel / 神策）</div>
+          </div>
+          <div class="imp-row">
+            <div class="imp-old">⚠️ 无 A/B 测试能力</div>
+            <div class="imp-new">✅ Feature Flag 系统（灰度发布）</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;padding:30px;color:#64748b;font-size:.85em;border-top:1px solid rgba(255,255,255,.06);margin-top:40px;">
+      🛠️ 软件开发全流程指南 · 系统化 · 结构化 · 可落地<br>
+      ⚡ AIAdPlacer Project · Powered by <a href="http://duckwolf.cn" style="color:#818cf8;">duckwolf.cn</a>
+    </div>
+
+  </div>
+</body>
+</html>
