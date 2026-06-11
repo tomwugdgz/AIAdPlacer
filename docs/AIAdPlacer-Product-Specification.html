@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIAdPlacer 产品完整规格说明书</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.8;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  h1 { font-size: 2em; color: var(--accent); border-bottom: 2px solid var(--border); padding-bottom: 12px; margin: 32px 0 16px; }
+  h2 { font-size: 1.5em; color: var(--green); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin: 28px 0 12px; }
+  h3 { font-size: 1.2em; color: var(--purple); margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 0.92em; }
+  th { background: var(--bg3); color: var(--green); }
+  tr:nth-child(even) { background: var(--bg2); }
+  code { background: var(--bg3); color: var(--orange); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 0.85em; line-height: 1.5; }
+  blockquote { border-left: 4px solid var(--accent); background: var(--bg2); padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  .nav { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 24px 0; }
+  .section { margin: 32px 0; }
+  .like { color: var(--green); }
+  .dislike { color: var(--red); }
+</style>
+</head>
+<body>
+<h1>AIAdPlacer 产品完整规格说明书</h1>
+<blockquote>文档版本：v2.2 · 2026-06<br>编写目的：为 AI 系统提供足够详细的产品规格，使其能独立重新实现一套同类软件系统。</blockquote>
+<div class="nav">
+<h3>📋 目录</h3>
+<p style="line-height:2;">
+<a href="#s1">1.产品概述</a> · 
+<a href="#s2">2.核心概念</a> · 
+<a href="#s3">3.系统架构</a> · 
+<a href="#s4">4.功能模块</a> · 
+<a href="#s5">5.用户流程</a> · 
+<a href="#s6">6.Agent逻辑</a> · 
+<a href="#s7">7.数据模型</a> · 
+<a href="#s8">8.API规范</a> · 
+<a href="#s9">9.MCP集成</a> · 
+<a href="#s10">10.部署运维</a> · 
+<a href="#s11">11.行业标准</a> · 
+<a href="#s12">12.评价与改进</a> · 
+<a href="#s13">13.术语表</a>
+</p>
+</div>
+<div class="section" id="s1">
+<h2>1. 产品概述</h2>
+<p>AI Native pDOOH 平台，LLM+Agent+RAG+MCP 全栈落地，5V数据模型（V4门禁独家），目标用户：广告主/媒体主/代理商/AI Agent。</p>
+<p><a href="AIAdPlacer-Product-Specification.md">📄 查看完整 Markdown 版本</a></p>
+</div>
+<div class="section" id="s2">
+<h2>2. 核心业务概念</h2>
+<p>pDOOH vs 传统户外、5V数据模型（V1人口/V2消费/V3社区/V4门禁/V5行为）、OTC模型（PV×Reach×Frequency×系数）、社区广告资源类型（单元门/道闸/App/LED）。</p>
+</div>
+<div class="section" id="s3">
+<h2>3. 系统架构</h2>
+<p>整体四层架构：用户交互层 → FastAPI后端（v2.0.0 CPS）→ LangGraph Agent编排层（4个专业Agent+统一编排）→ 数据与服务层（PostgreSQL/Redis/ChromaDB/腾讯地图/5V数据）。目录结构完整说明。</p>
+</div>
+<div class="section" id="s4">
+<h2>4. 功能模块详解</h2>
+<p>五大模块：①人群洞察（KMeans聚类，POST /api/v2/agents/audience-insight）；②智能排期（FM+deepMCP，预算约束优化）；③动态创意（AIGC+DCO，多模态组合）；④效果归因（跨端匹配，V4门禁验证）；⑤RAG知识库（ChromaDB+text2vec，行业报告/历史案例检索）。</p>
+</div>
+<div class="section" id="s5">
+<h2>5. 用户使用流程</h2>
+<p>广告主8步流程：注册→创建计划→AI推荐点位→AI生成排期→AI生成创意→确认支付→投放执行→效果报告。代理商可管理多广告主、AI批量生成报告、监控竞品。</p>
+</div>
+<div class="section" id="s6">
+<h2>6. AI Agent 编排逻辑</h2>
+<p>统一编排Agent（Orchestrator）三阶段：规划（分析请求决定调用哪些Agent）→执行（并行/串行）→反思（检查结果，不满意最多重试3轮）。Agent间用结构化JSON+JSON Schema通信。</p>
+</div>
+<div class="section" id="s7">
+<h2>7. 数据模型</h2>
+<p>四张核心表：users（用户）/campaigns（投放计划）/creatives（创意素材）/otc_logs（OTC归因日志）。5V数据层通过统一DataProvider接口访问，支持query()和get_coverage()方法。</p>
+</div>
+<div class="section" id="s8">
+<h2>8. API 完整规范</h2>
+<p>认证：X-API-Key Header。Agent调用：POST /api/v2/agents/{agent_name}/invoke（通用输入输出Schema）。RAG查询：POST /api/v2/rag/query（top-k相似检索）。MCP工具：POST /api/v2/mcp/tools/{list,invoke}。</p>
+</div>
+<div class="section" id="s9">
+<h2>9. MCP/A2A 集成</h2>
+<p>MCP：提供search_community / estimate_otc / generate_creative / query_campaign / get_attribution_report 五个工具，FastAPI实现，支持SSE流式返回。A2A：暴露Agent Card（/.well-known/agent.json），支持Agent发现、异步任务、流式进度。</p>
+</div>
+<div class="section" id="s10">
+<h2>10. 部署与运维</h2>
+<p>部署架构：Nginx反向代理→FastAPI多worker→PostgreSQL主从+Redis哨兵+ChromaDB持久化。环境变量完整配置说明。监控：Prometheus+Grafana，ELK日志，告警规则（错误率>5%/执行>30s/连接池>80%）。</p>
+</div>
+<div class="section" id="s11">
+<h2>11. 行业标准对齐</h2>
+<p>T/CCSA 738-2025（中国通信标准化协会程序化户外广告标准）。国际对标：IAB OpenRTB 3.0、OMA标准、GDPR、PIPL。OTC模型符合「可见曝光」定义。</p>
+</div>
+<div class="section" id="s12">
+<h2>12. 产品评价：喜欢与改进空间</h2>
+<p><span class="like">✅ 喜欢</span>：AI Native设计、5V数据壁垒、MCP/A2A前瞻、OTC模型实用。<br><br><span class="dislike">⚠️ 改进空间</span>：①数据隐私合规（联邦学习/聚合统计/opt-in）；②Agent可靠性（人在回路/置信度评分/决策日志）；③创意质量（质量评估模型/A/B测试/品牌素材上传）；④跨屏归因（概率归因/因果推断）；⑤性能成本（LLM缓存/大小模型分工/批量处理）；⑥用户体验（React前端/拖拽编辑/实时大屏/移动App）；⑦生态建设（媒体主API/pDOOH联盟链/电商全链路追踪）。</p>
+</div>
+<div class="section" id="s13">
+<h2>13. 附录：术语表</h2>
+<p>pDOOH、OTC、DCO、AIGC、RAG、MCP、A2A、LLM、OneID、CPT、CPM、ROAS、CAC、PIPL、OpenRTB 共15个术语中英文对照及说明。附：重新实现指南（MVP功能清单/逐步添加AI能力/开源组件推荐/数据获取建议）。</p>
+</div>
+<hr>
+<p style="color:var(--text2);font-size:0.9em;">* 完整详细内容请查看同目录下的 <code>AIAdPlacer-Product-Specification.md</code> 文件。</p>
+</body>
+</html>
