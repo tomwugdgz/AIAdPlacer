@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>亲邻传媒 MCP 工具包 — 一键调用指南</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #0a0e1a;
+      color: #e0e6f0;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    .bg-orb {
+      position: fixed; border-radius: 50%; filter: blur(120px); opacity: .12; pointer-events: none; z-index: 0;
+    }
+    .bg-orb-1 { width: 600px; height: 600px; background: #6366f1; top: -200px; left: -200px; }
+    .bg-orb-2 { width: 500px; height: 500px; background: #06b6d4; bottom: -150px; right: -100px; }
+    .bg-orb-3 { width: 400px; height: 400px; background: #f59e0b; top: 50%; left: 60%; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+
+    /* Hero */
+    .hero {
+      text-align: center; padding: 60px 20px 40px;
+      background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(6,182,212,.06));
+      border-radius: 20px; margin-bottom: 48px; border: 1px solid rgba(99,102,241,.15);
+    }
+    .hero-icon { font-size: 56px; margin-bottom: 16px; }
+    .hero h1 { font-size: 2.2em; font-weight: 800; background: linear-gradient(135deg, #818cf8, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+    .hero .sub { font-size: 1.05em; color: #94a3b8; margin-bottom: 20px; }
+    .hero-badges { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: .85em; font-weight: 600; }
+    .badge-green { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+    .badge-blue { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+    .badge-purple { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
+    .badge-amber { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+
+    /* Sections */
+    .section { margin-bottom: 48px; }
+    .section-title {
+      font-size: 1.5em; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .icon { font-size: 1.2em; }
+
+    /* Tool Cards */
+    .tool-group { margin-bottom: 28px; }
+    .tool-group-title {
+      font-size: 1.1em; font-weight: 700; margin-bottom: 12px; padding: 8px 16px;
+      border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .tg-media { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.2); }
+    .tg-ai { background: rgba(139,92,246,.12); color: #a78bfa; border: 1px solid rgba(139,92,246,.2); }
+    .tg-mgmt { background: rgba(34,197,94,.12); color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+    .tg-agent { background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.2); }
+
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+    .tool-card {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px; transition: all .2s;
+    }
+    .tool-card:hover { background: rgba(255,255,255,.07); border-color: rgba(99,102,241,.3); transform: translateY(-1px); }
+    .tool-num { font-size: .75em; font-weight: 700; color: #64748b; min-width: 22px; text-align: center; }
+    .tool-name { font-family: 'SF Mono', 'Fira Code', monospace; font-size: .9em; color: #c4b5fd; flex: 1; }
+    .tool-desc { font-size: .82em; color: #94a3b8; }
+    .tool-status { font-size: .8em; color: #4ade80; }
+    .tool-data { font-size: .72em; color: #64748b; margin-left: auto; white-space: nowrap; }
+
+    /* Code Blocks */
+    .code-block {
+      position: relative; margin-bottom: 16px; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .code-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+      background: rgba(255,255,255,.05); border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: .82em; color: #94a3b8;
+    }
+    .code-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ef4444; } .dot-y { background: #f59e0b; } .dot-g { background: #22c55e; }
+    .code-header .title { margin-left: 4px; font-weight: 600; }
+    .code-copy {
+      margin-left: auto; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.05); color: #94a3b8; cursor: pointer; font-size: .78em; transition: all .2s;
+    }
+    .code-copy:hover { background: rgba(255,255,255,.12); color: #e2e8f0; }
+    pre { padding: 18px; overflow-x: auto; background: #0f1423; font-size: .88em; line-height: 1.6; }
+    code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #e2e8f0; }
+
+    /* Syntax */
+    .kw { color: #c084fc; } .str { color: #34d399; } .cm { color: #64748b; } .fn { color: #60a5fa; }
+    .num { color: #fbbf24; } .op { color: #94a3b8; }
+
+    /* Config Box */
+    .config-box {
+      background: rgba(139,92,246,.06); border: 1px solid rgba(139,92,246,.15);
+      border-radius: 14px; padding: 24px; margin-bottom: 24px;
+    }
+    .config-box h4 { color: #a78bfa; margin-bottom: 16px; font-size: 1.05em; }
+    .config-table { width: 100%; border-collapse: collapse; }
+    .config-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.06); font-size: .9em; }
+    .config-table td:first-child { color: #94a3b8; white-space: nowrap; }
+    .config-table td:last-child { font-family: 'SF Mono', monospace; color: #c4b5fd; }
+    .config-table tr:last-child td { border: none; }
+
+    /* Price Cards */
+    .price-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .price-card {
+      padding: 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.03); text-align: center; transition: all .2s;
+    }
+    .price-card:hover { border-color: rgba(99,102,241,.3); transform: translateY(-2px); }
+    .price-card .type { font-size: 1.1em; font-weight: 700; margin-bottom: 8px; }
+    .price-card .range { font-size: 1.6em; font-weight: 800; color: #818cf8; }
+    .price-card .unit { font-size: .82em; color: #94a3b8; margin-top: 4px; }
+
+    /* Links */
+    .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .link-card {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px; text-decoration: none; color: #e2e8f0; transition: all .2s;
+    }
+    .link-card:hover { background: rgba(99,102,241,.1); border-color: rgba(99,102,241,.3); }
+    .link-card .link-icon { font-size: 1.3em; }
+    .link-card .link-label { font-size: .82em; color: #94a3b8; }
+    .link-card .link-url { font-size: .88em; font-family: 'SF Mono', monospace; color: #60a5fa; }
+
+    /* Disclaimer */
+    .disclaimer {
+      margin-top: 48px; padding: 20px 24px; border-radius: 12px;
+      background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.15);
+      font-size: .88em; color: #fbbf24;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.6em; }
+      .tool-grid { grid-template-columns: 1fr; }
+      .price-grid { grid-template-columns: 1fr; }
+      .link-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-icon">📡</div>
+      <h1>亲邻传媒 MCP 工具包</h1>
+      <div class="sub">19 个 MCP 工具 · 一键调用 · AI 驱动 · 100,000+ 媒体资源</div>
+      <div class="hero-badges">
+        <span class="badge badge-green">✅ 全部在线</span>
+        <span class="badge badge-blue">🔌 MCP 协议</span>
+        <span class="badge badge-purple">⚡ MiniMax AI</span>
+        <span class="badge badge-amber">🧠 Tom Agent</span>
+      </div>
+    </div>
+
+    <!-- API Endpoint -->
+    <div class="section">
+      <div class="config-box">
+        <h4>🔗 API 端点</h4>
+        <table class="config-table">
+          <tr><td>Base URL</td><td>http://47.253.159.62:5002/api/v2/mcp/pdooh</td></tr>
+          <tr><td>工具调用</td><td>POST /tools/call</td></tr>
+          <tr><td>工具列表</td><td>GET /tools/list</td></tr>
+          <tr><td>健康检查</td><td>GET /health</td></tr>
+          <tr><td>方案生成</td><td>POST /tom/plan</td></tr>
+          <tr><td>API 文档</td><td>http://47.253.159.62:5002/docs</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tool List -->
+    <div class="section">
+      <div class="section-title"><span class="icon">📋</span> 工具清单（19 个）</div>
+
+      <!-- 媒体查询 -->
+      <div class="tool-group">
+        <div class="tool-group-title tg-media">📺 媒体查询（6 个）</div>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <span class="tool-num">1</span>
+            <span class="tool-name">pdooh_query_screens</span>
+            <span class="tool-desc">智能屏</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">2</span>
+            <span class="tool-name">pdooh_query_daocha_points</span>
+            <span class="tool-desc">道闸点位</span>
+            <span class="tool-status">✅</span>
+            <span class="tool-data">1,021条</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">3</span>
+            <span class="tool-name">pdooh_query_smart_frames</span>
+            <span class="tool-desc">单元门</span>
+            <span class="tool-status">✅</span>
+            <span class="tool-data">8,114条</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">4</span>
+            <span class="tool-name">pdooh_query_access_points</span>
+            <span class="tool-desc">门禁屏</span>
+            <span class="tool-status">✅</span>
+            <span class="tool-data">66,308条</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">5</span>
+            <span class="tool-name">pdooh_query_city_resources</span>
+            <span class="tool-desc">城市资源</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">6</span>
+            <span class="tool-name">pdooh_query_city_summary</span>
+            <span class="tool-desc">城市汇总</span>
+            <span class="tool-status">✅</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 智能 -->
+      <div class="tool-group">
+        <div class="tool-group-title tg-ai">🤖 AI 智能（6 个）⚡ MiniMax</div>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <span class="tool-num">7</span>
+            <span class="tool-name">pdooh_audience_insight</span>
+            <span class="tool-desc">人群洞察</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">8</span>
+            <span class="tool-name">pdooh_strategy_suggestion</span>
+            <span class="tool-desc">策略建议</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">9</span>
+            <span class="tool-name">pdooh_media_recommend</span>
+            <span class="tool-desc">媒体推荐</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">10</span>
+            <span class="tool-name">pdooh_scheduling_optimize</span>
+            <span class="tool-desc">排期优化</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">11</span>
+            <span class="tool-name">pdooh_competitor_compare</span>
+            <span class="tool-desc">竞品分析</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">12</span>
+            <span class="tool-name">pdooh_compliance_check</span>
+            <span class="tool-desc">合规审核</span>
+            <span class="tool-status">✅</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 投放管理 -->
+      <div class="tool-group">
+        <div class="tool-group-title tg-mgmt">🎯 投放管理（6 个）</div>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <span class="tool-num">13</span>
+            <span class="tool-name">pdooh_create_campaign</span>
+            <span class="tool-desc">创建投放</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">14</span>
+            <span class="tool-name">pdooh_query_campaigns</span>
+            <span class="tool-desc">查询投放</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">15</span>
+            <span class="tool-name">pdooh_submit_creative</span>
+            <span class="tool-desc">提交创意</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">16</span>
+            <span class="tool-name">pdooh_query_report</span>
+            <span class="tool-desc">效果报告</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">17</span>
+            <span class="tool-name">pdooh_update_campaign_status</span>
+            <span class="tool-desc">更新状态</span>
+            <span class="tool-status">✅</span>
+          </div>
+          <div class="tool-card">
+            <span class="tool-num">18</span>
+            <span class="tool-name">pdooh_query_city_media_types</span>
+            <span class="tool-desc">媒体类型</span>
+            <span class="tool-status">✅</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tom Agent -->
+      <div class="tool-group">
+        <div class="tool-group-title tg-agent">🧠 Tom Agent 方案生成（1 个）</div>
+        <div class="tool-grid">
+          <div class="tool-card" style="grid-column: 1 / -1;">
+            <span class="tool-num">19</span>
+            <span class="tool-name">POST /tom/plan</span>
+            <span class="tool-desc">生成完整投放方案（品牌+城市+预算 → AI 方案）</span>
+            <span class="tool-status">✅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- curl Examples -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🚀</span> 一键调用示例</div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">1. 查询城市资源汇总</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">curl</span> -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"name":"pdooh_query_city_summary","arguments":{}}'</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">2. 查询广州天河区点位</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">curl</span> -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"name":"pdooh_query_screens","arguments":{"city":"广州","district":"天河区","limit":10}}'</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">3. 生成投放方案（Tom Agent）</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">curl</span> -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tom/plan \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"brand":"某品牌","city":"广州","budget":"50万"}'</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">4. 人群洞察分析</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">curl</span> -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"name":"pdooh_audience_insight","arguments":{"product_desc":"高端白酒","target_city":"广州"}}'</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">5. AI 策略建议（MiniMax）</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">curl</span> -X POST http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"name":"pdooh_strategy_suggestion","arguments":{"industry":"白酒","budget":500000,"target_city":"广州"}}'</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Python SDK -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🐍</span> Python 调用</div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">mcp_client.py</span>
+          <button class="code-copy" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code><span class="kw">import</span> requests
+
+<span class="cm"># 通用 MCP 工具调用</span>
+<span class="kw">def</span> <span class="fn">call_tool</span>(name, arguments=<span class="kw">None</span>):
+    url = <span class="str">"http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call"</span>
+    resp = requests.post(url, json={<span class="str">"name"</span>: name, <span class="str">"arguments"</span>: arguments <span class="kw">or</span> {}})
+    <span class="kw">return</span> resp.json()
+
+<span class="cm"># 查询城市汇总</span>
+result = call_tool(<span class="str">"pdooh_query_city_summary"</span>)
+<span class="fn">print</span>(result)
+
+<span class="cm"># 查询智能屏</span>
+screens = call_tool(<span class="str">"pdooh_query_screens"</span>, {
+    <span class="str">"city"</span>: <span class="str">"广州"</span>, <span class="str">"district"</span>: <span class="str">"天河区"</span>, <span class="str">"limit"</span>: <span class="num">10</span>
+})
+<span class="fn">print</span>(screens)
+
+<span class="cm"># 人群洞察</span>
+insight = call_tool(<span class="str">"pdooh_audience_insight"</span>, {
+    <span class="str">"product_desc"</span>: <span class="str">"高端白酒"</span>, <span class="str">"target_city"</span>: <span class="str">"广州"</span>
+})
+<span class="fn">print</span>(insight)</code></pre>
+      </div>
+    </div>
+
+    <!-- MCP Config -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🖥️</span> Claude Desktop / Cursor MCP 配置</div>
+      <div class="config-box">
+        <h4>将以下内容添加到配置文件中</h4>
+        <div class="code-block" style="margin:0;">
+          <div class="code-header">
+            <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+            <span class="title">claude_desktop_config.json</span>
+            <button class="code-copy" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code>{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"pDOOH"</span>: {
+      <span class="str">"command"</span>: <span class="str">"npx"</span>,
+      <span class="str">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@modelcontextprotocol/server-http"</span>],
+      <span class="str">"env"</span>: {
+        <span class="str">"MCP_SERVER_URL"</span>: <span class="str">"http://47.253.159.62:5002/api/v2/mcp/pdooh"</span>
+      }
+    }
+  }
+}</code></pre>
+        </div>
+        <table class="config-table" style="margin-top: 16px;">
+          <tr><td>Claude Desktop (macOS)</td><td>~/Library/Application Support/Claude/claude_desktop_config.json</td></tr>
+          <tr><td>Claude Desktop (Windows)</td><td>%APPDATA%\Claude\claude_desktop_config.json</td></tr>
+          <tr><td>Cursor</td><td>设置 → MCP → 添加服务器</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Media Pricing -->
+    <div class="section">
+      <div class="section-title"><span class="icon">📊</span> 媒体类型与价格</div>
+      <div class="price-grid">
+        <div class="price-card">
+          <div class="type">🚪 广告门</div>
+          <div class="range">5,280 - 8,800</div>
+          <div class="unit">元/面/2周</div>
+        </div>
+        <div class="price-card">
+          <div class="type">🏠 单元门</div>
+          <div class="range">980 - 1,180</div>
+          <div class="unit">元/面/周</div>
+        </div>
+        <div class="price-card">
+          <div class="type">🚧 道闸</div>
+          <div class="range">3,000 - 5,000</div>
+          <div class="unit">元/面/月</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Links -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🔗</span> 相关链接</div>
+      <div class="link-grid">
+        <a class="link-card" href="http://47.253.159.62:5002/docs" target="_blank">
+          <span class="link-icon">📖</span>
+          <div><div class="link-label">API 文档</div><div class="link-url">47.253.159.62:5002/docs</div></div>
+        </a>
+        <a class="link-card" href="http://47.253.159.62:5002/api/v2/mcp/pdooh/health" target="_blank">
+          <span class="link-icon">💚</span>
+          <div><div class="link-label">健康检查</div><div class="link-url">/api/v2/mcp/pdooh/health</div></div>
+        </a>
+        <a class="link-card" href="http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list" target="_blank">
+          <span class="link-icon">📋</span>
+          <div><div class="link-label">工具列表</div><div class="link-url">/api/v2/mcp/pdooh/tools/list</div></div>
+        </a>
+        <a class="link-card" href="http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml" target="_blank">
+          <span class="link-icon">⚡</span>
+          <div><div class="link-label">Skill YAML</div><div class="link-url">/api/v2/mcp/pdooh/skill.yaml</div></div>
+        </a>
+        <a class="link-card" href="http://duckwolf.cn/pd.html" target="_blank">
+          <span class="link-icon">🌐</span>
+          <div><div class="link-label">接口解说</div><div class="link-url">duckwolf.cn/pd.html</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+      ⚠️ 免责声明：本项目所有语料、数据库及资源均来源于公开渠道或模拟生成，仅供技术研究与学习交流使用。<strong>本软件并非用于商业用途。</strong>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre');
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '已复制 ✓';
+        setTimeout(() => btn.textContent = '复制', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
