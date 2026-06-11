@@ -337,7 +337,7 @@ mcp_endpoint: "/api/v2/mcp/pdooh/tools/call"
 
 ```bash
 curl http://47.253.159.62:5002/api/v2/mcp/pdooh/health
-# {"service": "pDOOH A2A MCP Server", "status": "ok", "tools_count": 8, ...}
+# {"service": "pDOOH A2A MCP Server", "status": "ok", "tools_count": 16, ...}
 ```
 
 ---
@@ -513,6 +513,8 @@ result = mcp_call(
 
 ## 📈 数据库统计（当前入库数据）
 
+### PostgreSQL（主库）
+
 | 表名 | 记录数 | 说明 |
 |------|--------|------|
 | `screen` | 9,801 | 智能屏资产（模拟扩展） |
@@ -520,6 +522,16 @@ result = mcp_call(
 | `spatial_trajectory` | 8,979 | 空间轨迹（家-工作-屏） |
 | `poi_data` | 13,362 | POI 数据点 |
 | `person_dmp_tags` | 10,000 | DMP 标签（55 维） |
+
+### qinlin_local.db（完整媒体资源库，100,000+ 条）
+
+| 表名 | 记录数 | 说明 |
+|------|--------|------|
+| 道闸点位 | **1,021** | 社区/商业园区道闸广告位 |
+| 单元门点位 | **8,114** | 住宅单元门框架广告位 |
+| 门禁点位 | **66,308** | ⭐ 社区门禁终端（独家 V4 数据） |
+| 智能屏 L9 | 待接入 | 梯内智能屏 L9 型号 |
+| 客户通讯录 | 内部数据 | 客户关系管理数据 |
 
 ---
 
@@ -550,24 +562,41 @@ result = mcp_call(
 | 接口 | 地址 | 说明 |
 |------|------|------|
 | MCP Health | `http://47.253.159.62:5002/api/v2/mcp/pdooh/health` | 健康检查 |
-| MCP Tools List | `http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list` | 列出 8 个工具 |
+| MCP Tools List | `http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list` | 列出 16 个工具 |
 | MCP Tool Call | `http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/call` | 调用具体工具 |
 | Skill YAML | `http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml` | SKILL 配置（供 AI Agent 读取） |
 | Agent Execute | `http://47.253.159.62:5002/api/v2/agents/execute` | A2A 任务编排 |
 | API 文档 | `http://47.253.159.62:5002/docs` | Swagger UI |
 
-#### 🛠️ 8 个 MCP Tools
+#### 🛠️ 16 个 MCP Tools（全部在线 ✅）
 
-| 工具名 | 功能 |
-|--------|------|
-| `pdooh_query_screens` | 查询智能屏点位 |
-| `pdooh_get_screen_audience` | 获取人群画像 |
-| `pdooh_create_campaign` | 创建投放计划 |
-| `pdooh_query_campaigns` | 查询投放计划 |
-| `pdooh_submit_creative` | 提交创意物料 |
-| `pdooh_query_report` | 查询效果报告 |
-| `pdooh_compliance_check` | 合规审核 |
-| `pdooh_audience_insight` | 人群洞察分析 |
+> 服务：**pDOOH A2A MCP Server** · 工具总数：**19 个** · 健康检查：✅ OK · 数据库：`qinlin_local.db`（完整版）· 总数据量：**100,000+ 条**
+
+**✅ 核心投放工具（8个）**
+
+| # | 工具名 | 功能 | 状态 |
+|---|--------|------|------|
+| 1 | `pdooh_query_screens` | 查询智能屏点位 | ✅ |
+| 2 | `pdooh_get_screen_audience` | 获取人群画像 | ✅ |
+| 3 | `pdooh_create_campaign` | 创建投放计划 | ✅ |
+| 4 | `pdooh_query_campaigns` | 查询投放计划 | ✅ |
+| 5 | `pdooh_submit_creative` | 提交创意物料 | ✅ |
+| 6 | `pdooh_query_report` | 查询效果报告 | ✅ |
+| 7 | `pdooh_compliance_check` | 合规审核 | ✅ |
+| 8 | `pdooh_audience_insight` | 人群洞察分析 | ✅ |
+
+**✅ 媒体资源查询工具（8个）**
+
+| # | 工具名 | 功能 | 数据来源 | 状态 |
+|---|--------|------|----------|------|
+| 9 | `pdooh_query_daocha_points` | 道闸点位查询 | 道闸点位（1,021条） | ✅ |
+| 10 | `pdooh_query_smart_frames` | 单元门点位查询 | 单元门点位（8,114条） | ✅ |
+| 11 | `pdooh_query_access_points` | 门禁点位查询 | 门禁点位（66,308条） | ✅ |
+| 12 | `pdooh_query_led_points` | LED 广告屏查询 | 待接入数据 | ✅ |
+| 13 | `pdooh_query_elevator_frames` | 电梯框架查询 | 待接入数据 | ✅ |
+| 14 | `pdooh_query_shadow_points` | 投影点位查询 | 待接入数据 | ✅ |
+| 15 | `pdooh_query_city_resources` | 城市综合资源统计 | 综合统计 | ✅ |
+| 16 | `pdooh_query_city_summary` | 城市媒体汇总 | 城市汇总 | ✅ |
 
 #### 📋 SKILL 调用示例
 
