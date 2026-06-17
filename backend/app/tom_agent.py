@@ -168,6 +168,7 @@ class PlanGenerateResponse(BaseModel):
     total_cost: float
     timeline: List[Dict[str, str]]
     roi_result: Optional[Dict[str, Any]] = None  # ROI 三场景计算结果
+    roi_visualization: Optional[str] = None  # ROI 可视化图表 HTML
 
 class CpmTrackRequest(BaseModel):
     campaign_id: str
@@ -256,23 +257,35 @@ def detect_and_call_mcp_tools(user_message: str) -> List[Dict[str, Any]]:
     return mcp_calls
 
 # ── ROI Agent 调用封装 ────────────────────────────────────────────────────────────
-async def call_roi_agent(cost: float, cities: List[str]) -> Optional[Dict]:
+async def call_roi_agent(cost: float, cities: List[str], product: str = None) -> Optional[Dict]:
     """
     调用 ROI Agent 计算三场景 ROI
     在生成投放方案后自动调用，将 ROI 结果随方案一并返回
 
-    调用方式：GET /api/v2/roi/three-scenarios?N=5000&cost={cost}&T=14
+    调用方式：GET /api/v2/roi/three-scenarios?N=5000&cost={cost}&T=14&city={city}&product={product}
     """
     try:
         # 根据城市数量调整 N（广告框数）
         # 默认每城市 5000 框，最多 3 个城市
         N = min(len(cities), 3) * 5000
+        
+        # 构建 URL（增加 city 和 product 参数）
         url = f"http://127.0.0.1:5004/api/v2/roi/three-scenarios?N={N}&cost={int(cost)}&T=14"
+        if cities and len(cities) > 0:
+            url += f"&city={cities[0]}"  # 取第一个城市
+        if product:
+            url += f"&product={product}"
+        
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url)
             if resp.status_code == 200:
                 data = resp.json()
-                logger.info(f"ROI Agent 调用成功: cost={cost}, roi_pessimistic={data.get('pessimistic', {}).get('roi_percent', 'N/A')}")
+                logger.info(f"ROI Agent 调用成功: cost={cost}, roi_pessimistic={data.get('scenarios', {}).get('pessimistic', {}).get('roi_percent', 'N/A')}")
+                
+                # 生成 ROI 可视化 HTML
+                if "scenarios" in data:
+                    data["visualization"] = generate_roi_chart_html(data["scenarios"])
+                
                 return data
             else:
                 logger.warning(f"ROI Agent 返回非 200: {resp.status_code}, {resp.text}")
@@ -280,6 +293,83 @@ async def call_roi_agent(cost: float, cities: List[str]) -> Optional[Dict]:
     except Exception as e:
         logger.warning(f"ROI Agent 调用失败（已忽略，不影响主流程）: {e}")
         return None
+
+def generate_roi_chart_html(scenarios: Dict) -> str:
+    """
+    生成 ROI 三场景可视化图表的 HTML（自包含，零外部依赖）
+    
+    返回一个简单的条形图 HTML，展示三场景的 ROI、LTV、净收益
+    """
+    # 提取数据
+    pes = scenarios.get("pessimistic", {})
+    neu = scenarios.get("neutral", {})
+    opt = scenarios.get("optimistic", {})
+    
+    pes_roi = pes.get("roi_percent", 0)
+    neu_roi = neu.get("roi_percent", 0)
+    opt_roi = opt.get("roi_percent", 0)
+    
+    pes_ltv = pes.get("ltv", 0)
+    neu_ltv = neu.get("ltv", 0)
+    opt_ltv = opt.get("ltv", 0)
+    
+    # 生成简单的条形图 HTML（内联样式，零外部依赖）
+    html = f"""
+    <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; font-family: Arial, sans-serif;">
+        <h3 style="margin: 0 0 15px 0; color: #333; font-size: 18px;">📊 ROI 三场景预测</h3>
+        
+        <!-- ROI 条形图 -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #555; font-size: 14px;">投资回报率 (ROI %)</h4>
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="width: 80px; font-size: 12px; color: #666;">悲观</div>
+                <div style="flex: 1; background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {max(pes_roi/5, 2)}%; background: #ff6b6b; height: 100%; border-radius: 4px;"></div>
+                </div>
+                <div style="width: 60px; text-align: right; font-size: 12px; color: #ff6b6b; font-weight: bold;">{pes_roi:.1f}%</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="width: 80px; font-size: 12px; color: #666;">中性</div>
+                <div style="flex: 1; background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {max(neu_roi/5, 2)}%; background: #ffa726; height: 100%; border-radius: 4px;"></div>
+                </div>
+                <div style="width: 60px; text-align: right; font-size: 12px; color: #ffa726; font-weight: bold;">{neu_roi:.1f}%</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="width: 80px; font-size: 12px; color: #666;">乐观</div>
+                <div style="flex: 1; background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {max(opt_roi/5, 2)}%; background: #66bb6a; height: 100%; border-radius: 4px;"></div>
+                </div>
+                <div style="width: 60px; text-align: right; font-size: 12px; color: #66bb6a; font-weight: bold;">{opt_roi:.1f}%</div>
+            </div>
+        </div>
+        
+        <!-- LTV 对比 -->
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+            <div>
+                <div style="font-size: 12px; color: #666;">悲观 LTV</div>
+                <div style="font-size: 16px; color: #ff6b6b; font-weight: bold;">¥{pes_ltv:,.0f}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #666;">中性 LTV</div>
+                <div style="font-size: 16px; color: #ffa726; font-weight: bold;">¥{neu_ltv:,.0f}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #666;">乐观 LTV</div>
+                <div style="font-size: 16px; color: #66bb6a; font-weight: bold;">¥{opt_ltv:,.0f}</div>
+            </div>
+        </div>
+        
+        <!-- 参数调整说明 -->
+        <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 6px; font-size: 12px; color: #666;">
+            <div style="font-weight: bold; margin-bottom: 5px;">📋 计算说明</div>
+            <div>• UV = N×U×P×β（独立触达人数）</div>
+            <div>• ROI = (LTV - 成本) / 成本 × 100%</div>
+            <div>• 数据来源：duckwolf.cn/10.html（黑人牙膏案例）</div>
+        </div>
+    </div>
+    """
+    return html
 
 # ── LLM 调用封装 ────────────────────────────────────────────────────────────────
 def build_llm_messages(messages: List[ChatMessage], mcp_context: str = "") -> List[Dict]:
@@ -471,7 +561,12 @@ async def generate_plan(req: PlanGenerateRequest):
     plan_id = f"PLAN-{uuid.uuid4().hex[:8].upper()}"
 
     # 调用 ROI Agent 计算三场景 ROI（自动联动）
-    roi_result = await call_roi_agent(total_cost, req.cities)
+    roi_result = await call_roi_agent(total_cost, req.cities, product=req.product)
+    
+    # 提取可视化图表 HTML
+    roi_visualization = None
+    if roi_result and "visualization" in roi_result:
+        roi_visualization = roi_result["visualization"]
 
     return PlanGenerateResponse(
         plan_id=plan_id,
@@ -489,6 +584,7 @@ async def generate_plan(req: PlanGenerateRequest):
             {"phase": "上线投放", "duration": "持续", "note": "按计划执行，每周提供数据报告"},
         ],
         roi_result=roi_result,
+        roi_visualization=roi_visualization,
     )
 
 @router.post("/cpm/track", response_model=CpmTrackResponse)

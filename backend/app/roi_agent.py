@@ -64,6 +64,161 @@ DEFAULT_PARAMS = {
     "cost_per_frame_4w": 60, # 每框成本（元/框/4周）[方案B]
 }
 
+# ── 城市参数自动调整映射 ────────────────────────────────────────────────────────────
+# 根据城市等级自动调整参数（U/β/a）
+CITY_PARAMS = {
+    "一线城市": {
+        "cities": ["北京", "上海", "广州", "深圳"],
+        "U": 80,      # 每栋楼户数较少（高端楼盘）
+        "beta": 0.82, # 接触率略低（选择多）
+        "a": 30,      # 客单价较高
+        "r_base": 0.17, # 记忆率基准
+    },
+    "新一线城市": {
+        "cities": ["成都", "杭州", "重庆", "西安", "武汉", "苏州", "天津", "南京", "郑州", "长沙", "东莞", "沈阳", "青岛", "合肥", "佛山"],
+        "U": 100,
+        "beta": 0.85,
+        "a": 22,
+        "r_base": 0.18,
+    },
+    "二线城市": {
+        "cities": ["昆明", "福州", "无锡", "厦门", "哈尔滨", "长春", "南昌", "济南", "宁波", "大连", "贵阳", "温州", "石家庄", "泉州", "南宁", "金华", "常州", "珠海", "惠州", "嘉兴", "南通", "中山", "保定", "兰州", "台州", "徐州", "太原", "绍兴", "烟台", "廊坊"],
+        "U": 110,
+        "beta": 0.87,
+        "a": 18,
+        "r_base": 0.19,
+    },
+    "三线及以下": {
+        "cities": [],  # 其他城市
+        "U": 120,
+        "beta": 0.90,
+        "a": 15,
+        "r_base": 0.20,
+    },
+}
+
+# ── 产品类型参数自动调整映射 ────────────────────────────────────────────────────────
+# 根据产品类型自动调整参数（r/a/f）
+PRODUCT_PARAMS = {
+    "日化": {
+        "keywords": ["牙膏", "洗发水", "沐浴露", "洗衣液", "洗面奶", "护肤品", "化妆品", "香皂", "牙刷"],
+        "r_mult": 1.0,   # 记忆率倍数
+        "a_base": 25,    # 客单价基准
+        "f_mult": 1.1,   # 复购系数倍数（日化复购高）
+    },
+    "食品": {
+        "keywords": ["食品", "零食", "饮料", "牛奶", "酸奶", "面包", "饼干", "巧克力", "糖果"],
+        "r_mult": 1.1,   # 食品记忆率较高
+        "a_base": 15,    # 客单价较低
+        "f_mult": 1.2,   # 食品复购很高
+    },
+    "家电": {
+        "keywords": ["电视", "冰箱", "洗衣机", "空调", "微波炉", "烤箱", "家电", "数码", "手机", "电脑"],
+        "r_mult": 0.9,   # 家电记忆率较低
+        "a_base": 50,    # 客单价很高
+        "f_mult": 0.8,   # 家电复购低
+    },
+    "母婴": {
+        "keywords": ["母婴", "奶粉", "纸尿裤", "婴儿", "孕妇", "玩具", "童装"],
+        "r_mult": 1.2,   # 母婴记忆率很高
+        "a_base": 35,    # 客单价较高
+        "f_mult": 1.3,   # 母婴复购高
+    },
+    "汽车": {
+        "keywords": ["汽车", "新能源车", "电动车", "4S店", "保养", "轮胎"],
+        "r_mult": 0.8,   # 汽车记忆率较低
+        "a_base": 100,   # 客单价很高
+        "f_mult": 0.6,   # 汽车复购很低
+    },
+    "其他": {
+        "keywords": [],
+        "r_mult": 1.0,
+        "a_base": 22,
+        "f_mult": 1.0,
+    },
+}
+
+def detect_city_tier(city: str) -> str:
+    """
+    检测城市等级
+    
+    返回：一线城市/新一线城市/二线城市/三线及以下
+    """
+    for tier, params in CITY_PARAMS.items():
+        if city in params["cities"]:
+            return tier
+    return "三线及以下"
+
+def detect_product_type(product: str) -> str:
+    """
+    检测产品类型
+    
+    返回：日化/食品/家电/母婴/汽车/其他
+    """
+    for ptype, params in PRODUCT_PARAMS.items():
+        if ptype != "其他":
+            for keyword in params["keywords"]:
+                if keyword in product:
+                    return ptype
+    return "其他"
+
+def adjust_params_by_context(city: str = None, product: str = None, U: float = None, a: float = None, r: float = None, f: float = None):
+    """
+    根据城市和产品类型自动调整参数
+    
+    返回调整后的参数字典
+    """
+    params = DEFAULT_PARAMS.copy()
+    
+    # 如果传入了具体值，使用传入值
+    if U is not None:
+        params["U"] = U
+    if a is not None:
+        params["a_neutral"] = a
+        params["a_pessimistic"] = a * 0.9
+        params["a_optimistic"] = a * 1.15
+    if r is not None:
+        params["r_neutral"] = r
+        params["r_pessimistic"] = r * 0.85
+        params["r_optimistic"] = r * 1.2
+    if f is not None:
+        params["f_neutral"] = f
+        params["f_pessimistic"] = f * 0.95
+        params["f_optimistic"] = f * 1.05
+    
+    # 根据城市调整参数
+    if city:
+        city_tier = detect_city_tier(city)
+        city_params = CITY_PARAMS[city_tier]
+        params["U"] = city_params["U"]
+        params["beta"] = city_params["beta"]
+        if a is None:  # 如果没有传入 a，使用城市默认值
+            params["a_neutral"] = city_params["a"]
+            params["a_pessimistic"] = city_params["a"] * 0.9
+            params["a_optimistic"] = city_params["a"] * 1.15
+        if r is None:  # 如果没有传入 r，使用城市默认值
+            params["r_neutral"] = city_params["r_base"]
+            params["r_pessimistic"] = city_params["r_base"] * 0.85
+            params["r_optimistic"] = city_params["r_base"] * 1.2
+    
+    # 根据产品类型调整参数
+    if product:
+        product_type = detect_product_type(product)
+        product_params = PRODUCT_PARAMS[product_type]
+        if r is None:  # 如果没有传入 r，使用产品类型调整
+            params["r_neutral"] *= product_params["r_mult"]
+            params["r_pessimistic"] = params["r_neutral"] * 0.85
+            params["r_optimistic"] = params["r_neutral"] * 1.2
+        if a is None:  # 如果没有传入 a，使用产品类型调整
+            params["a_neutral"] = product_params["a_base"]
+            params["a_pessimistic"] = product_params["a_base"] * 0.9
+            params["a_optimistic"] = product_params["a_base"] * 1.15
+        params["f_neutral"] *= product_params["f_mult"]
+        params["f_pessimistic"] = params["f_neutral"] * 0.95
+        params["f_optimistic"] = params["f_neutral"] * 1.05
+    
+    return params
+
 # ── 公式函数 ──────────────────────────────────────────────────────────────────────
 
 def calc_uv(N: int, U: float, P: float, beta: float) -> int:
@@ -185,13 +340,35 @@ def calc_three_scenarios(
     T: int = 14,
     cost: float = 100000,
     weeks: int = 8,
+    r_neutral: float = None,
+    a_neutral: float = None,
+    f_neutral: float = None,
 ) -> Dict[str, Any]:
     """
     计算三场景 ROI（悲观/中性/乐观）
 
     返回三个场景的完整计算结果
+    
+    新增参数：
+    - r_neutral: 中性场景记忆率（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
+    - a_neutral: 中性场景客单价（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
+    - f_neutral: 中性场景复购系数（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
     """
     params = DEFAULT_PARAMS.copy()
+    
+    # 使用传入的参数（如果提供）
+    if r_neutral is not None:
+        params["r_neutral"] = r_neutral
+        params["r_pessimistic"] = r_neutral * 0.85
+        params["r_optimistic"] = r_neutral * 1.2
+    if a_neutral is not None:
+        params["a_neutral"] = a_neutral
+        params["a_pessimistic"] = a_neutral * 0.9
+        params["a_optimistic"] = a_neutral * 1.15
+    if f_neutral is not None:
+        params["f_neutral"] = f_neutral
+        params["f_pessimistic"] = f_neutral * 0.95
+        params["f_optimistic"] = f_neutral * 1.05
 
     scenarios = {
         "pessimistic": {
@@ -265,6 +442,11 @@ class ROICalculateRequest(BaseModel):
     weeks: int = Field(8, description="LTV 计算周期（周）")
 
     scenario: Optional[str] = Field(None, description="预设场景：pessimistic/neutral/optimistic")
+    
+    # 新增：参数自动调整
+    city: Optional[str] = Field(None, description="投放城市（用于自动调整参数）")
+    product: Optional[str] = Field(None, description="产品类型（用于自动调整参数）")
+    auto_adjust: bool = Field(True, description="是否自动调整参数（根据城市/产品）")
 
 class ROICalculateResponse(BaseModel):
     """ROI 计算响应"""
@@ -312,19 +494,55 @@ async def health_check():
 @router.post("/calculate", response_model=Dict[str, Any])
 async def calculate_roi(req: ROICalculateRequest):
     """
-    ROI 计算（支持三场景预设）
+    ROI 计算（支持三场景预设 + 参数自动调整）
 
     传入 scenario 可快速计算预设场景：
     - pessimistic: 悲观（记忆率 0.15 / 客单 ¥20 / 复购 1.3）
     - neutral: 中性（记忆率 0.18 / 客单 ¥22 / 复购 1.4）
     - optimistic: 乐观（记忆率 0.22 / 客单 ¥25 / 复购 1.5）
+
+    传入 city 和 product 可自动调整参数：
+    - city: 投放城市（一线城市/新一线城市/二线城市/三线及以下）
+    - product: 产品类型（日化/食品/家电/母婴/汽车/其他）
+    - auto_adjust: 是否自动调整参数（默认 True）
     """
+    # 参数自动调整
+    adjusted = False
+    adjust_info = {}
+    if req.auto_adjust and (req.city or req.product):
+        adjusted_params = adjust_params_by_context(
+            city=req.city, 
+            product=req.product,
+            U=req.U if req.U != 100 else None,  # 如果用户没改默认值，允许自动调整
+            a=req.a if req.a != 22 else None,
+            r=req.r if req.r != 0.18 else None,
+            f=req.f if req.f != 1.4 else None,
+        )
+        # 更新 req 的参数
+        req.U = adjusted_params["U"]
+        req.beta = adjusted_params["beta"]
+        req.r = adjusted_params["r_neutral"]
+        req.a = adjusted_params["a_neutral"]
+        req.f = adjusted_params["f_neutral"]
+        adjusted = True
+        adjust_info = {
+            "city_tier": detect_city_tier(req.city) if req.city else None,
+            "product_type": detect_product_type(req.product) if req.product else None,
+            "adjusted_params": {
+                "U": adjusted_params["U"],
+                "beta": adjusted_params["beta"],
+                "r": adjusted_params["r_neutral"],
+                "a": adjusted_params["a_neutral"],
+                "f": adjusted_params["f_neutral"],
+            }
+        }
+    
     # 如果指定了预设场景，覆盖对应参数
     if req.scenario:
         scen_params = {
-            "pessimistic": {"r": 0.15, "a": 20, "f": 1.3},
-            "neutral": {"r": 0.18, "a": 22, "f": 1.4},
-            "optimistic": {"r": 0.22, "a": 25, "f": 1.5},
+            "pessimistic": {"r": req.r * 0.85, "a": req.a * 0.9, "f": req.f * 0.95},
+            "neutral": {"r": req.r, "a": req.a, "f": req.f},
+            "optimistic": {"r": req.r * 1.2, "a": req.a * 1.15, "f": req.f * 1.05},
         }
         if req.scenario in scen_params:
             sp = scen_params[req.scenario]
@@ -351,7 +569,7 @@ async def calculate_roi(req: ROICalculateRequest):
         f"ROI = (LTV-成本)/成本×100% = ({result['result']['ltv']:.2f}-{req.cost})/{req.cost}×100% = {result['result']['roi_percent']:.2f}%"
     )
 
-    return {
+    response = {
         "scenario": req.scenario,
         "uv": result["intermediates"]["uv"],
         "pv": result["intermediates"]["pv"],
@@ -364,12 +582,22 @@ async def calculate_roi(req: ROICalculateRequest):
         "params": result["params"],
         "formula": formula_desc,
     }
+    
+    # 增加参数调整说明
+    if adjusted:
+        response["auto_adjusted"] = True
+        response["adjust_info"] = adjust_info
+    
+    return response
 
 @router.get("/three-scenarios")
 async def get_three_scenarios(
     N: int = 5000,
     cost: float = 100000,
     T: int = 14,
+    city: Optional[str] = None,
+    product: Optional[str] = None,
+    auto_adjust: bool = True,
 ):
     """
     快速获取三场景 ROI（悲观/中性/乐观）
@@ -378,7 +606,31 @@ async def get_three_scenarios(
     - N: 广告框数（默认 5000）
     - cost: 投入成本（默认 100000）
     - T: 投放天数（默认 14）
+    - city: 投放城市（用于自动调整参数）
+    - product: 产品类型（用于自动调整参数）
+    - auto_adjust: 是否自动调整参数（默认 True）
     """
+    # 参数自动调整
+    if auto_adjust and (city or product):
+        adjusted_params = adjust_params_by_context(city=city, product=product)
+        U = adjusted_params["U"]
+        beta = adjusted_params["beta"]
+        r_neutral = adjusted_params["r_neutral"]
+        a_neutral = adjusted_params["a_neutral"]
+        f_neutral = adjusted_params["f_neutral"]
+        results = calc_three_scenarios(
+            N=N, U=U, P=2.51, beta=beta,
+            gamma=2.0, T=T,
+            cost=cost,
+            r_neutral=r_neutral, a_neutral=a_neutral, f_neutral=f_neutral
+        )
+        return {
+            "scenarios": results,
+            "auto_adjusted": True,
+            "city_tier": detect_city_tier(city) if city else None,
+            "product_type": detect_product_type(product) if product else None,
+        }
+    
     results = calc_three_scenarios(N=N, cost=cost, T=T)
     return {"scenarios": results}
 
@@ -431,8 +683,9 @@ async def compare_scenarios(req: CompareRequest):
     # 生成对比总结
     best = max(results, key=lambda x: x["roi_percent"])
     worst = min(results, key=lambda x: x["roi_percent"])
-    summary = f"最佳方案 ROI {best['roi_percent']:.2f}%（{best['scenario'] or f'方案{best[\"index\"]}'），" \
-              f"最低方案 ROI {worst['roi_percent']:.2f}%（{worst['scenario'] or f'方案{worst[\"index\"]}'）。"
+    best_label = best['scenario'] if best['scenario'] else f"方案{best['index']}"
+    worst_label = worst['scenario'] if worst['scenario'] else f"方案{worst['index']}"
+    summary = f"最佳方案 ROI {best['roi_percent']:.2f}%（{best_label}），最低方案 ROI {worst['roi_percent']:.2f}%（{worst_label}）。"
 
     return CompareResponse(scenarios=results, summary=summary)
 
