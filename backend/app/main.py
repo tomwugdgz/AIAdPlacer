@@ -22,6 +22,7 @@ from app.api.optimization_routes import router as optimization_router
 from app.api.dashboard_routes import router as dashboard_router
 from app.api.knowledge_routes import router as knowledge_router
 from app.tom_agent import router as tom_agent_router   # ← Tom Agent
+from app.roi_agent import router as roi_agent_router   # ← ROI Agent
 from app.config import settings
 
 app = FastAPI(
@@ -60,6 +61,8 @@ app.include_router(dashboard_router, prefix="/api/v2/dashboard")
 app.include_router(knowledge_router, prefix="/api/v2/knowledge")
 # Tom Agent — 户外广告投放专家（端口 5003 独立服务；此处为内嵌路由）
 app.include_router(tom_agent_router)
+# ROI Agent — 广告投放 ROI 计算专家（端口 5004 独立服务；此处为内嵌路由）
+app.include_router(roi_agent_router)
 
 @app.on_event("startup")
 async def startup():
@@ -78,3 +81,5 @@ async def startup():
     print(f"🤝 Tom Agent (投放专家): http://127.0.0.1:5002/api/v2/tom/chat")
     print(f"📋 投放方案生成: http://127.0.0.1:5002/api/v2/tom/plan/generate")
     print(f"📊 CPM 追踪/对比: http://127.0.0.1:5002/api/v2/tom/cpm/track")
+    print(f"📈 ROI Agent (投资回报): http://127.0.0.1:5002/api/v2/roi/calculate")
+    print(f"📊 ROI 三场景快查: http://127.0.0.1:5002/api/v2/roi/three-scenarios")
