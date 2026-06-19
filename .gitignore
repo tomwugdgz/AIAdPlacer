@@ -27,6 +27,10 @@ env/
 # Database
 *.db
 *.sqlite3
+# 保留项目数据目录中的数据库文件（根据实际需要，可以注释掉下一行来提交数据库）
+backend/data/*.db
+# 例外：允许提交脱敏样本库（小文件，无敏感数据）
+!backend/data/qinlin_local_sample.db
 
 # ChromaDB
 chroma/

@@ -290,7 +290,7 @@ def monitor_performance(
     return decorator
 
 
-async def monitor_performance_async(
+def monitor_performance_async(
     logger: Optional[logging.Logger] = None,
     log_level: int = logging.INFO,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:

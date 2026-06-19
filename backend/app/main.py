@@ -23,6 +23,7 @@ from app.api.dashboard_routes import router as dashboard_router
 from app.api.knowledge_routes import router as knowledge_router
 from app.tom_agent import router as tom_agent_router   # ← Tom Agent
 from app.roi_agent import router as roi_agent_router   # ← ROI Agent
+from app.db_api import db_api_router  # ← 数据库访问 API
 from app.config import settings
 
 app = FastAPI(
@@ -63,6 +64,9 @@ app.include_router(knowledge_router, prefix="/api/v2/knowledge")
 app.include_router(tom_agent_router)
 # ROI Agent — 广告投放 ROI 计算专家（端口 5004 独立服务；此处为内嵌路由）
 app.include_router(roi_agent_router)
+# 数据库访问 API — qinlin_local.db 点位数据查询
+app.include_router(db_api_router)
+
 
 @app.on_event("startup")
 async def startup():

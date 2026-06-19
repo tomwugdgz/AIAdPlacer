@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include pdooh_client *
+recursive-include tests *
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__/*
+global-exclude *.egg-info/*

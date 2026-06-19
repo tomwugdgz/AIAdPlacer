@@ -1,0 +1,134 @@
+erDiagram
+    UNIT_DOOR {
+        INTEGER id PK
+        TEXT 省份
+        TEXT 城市
+        TEXT 区域
+        TEXT 商圈
+        TEXT 资源名称
+        TEXT 详细地址
+        TEXT 楼盘类型
+        INTEGER 楼栋数量
+        REAL 单元门数量
+        REAL 经度
+        REAL 纬度
+        TEXT 封面图
+        TEXT 物业名称
+        TEXT 楼盘价格
+        INTEGER 住户数量
+        TEXT 联系人
+        TEXT 电话
+        TEXT 标签
+        TEXT 备注
+        TEXT 数据来源
+        TEXT 更新时间
+        TEXT 状态
+    }
+
+    ACCESS_DOOR {
+        INTEGER id PK
+        TEXT 省
+        TEXT 市
+        TEXT 区
+        TEXT 商圈
+        TEXT 楼盘名称
+        TEXT 楼盘地址
+        REAL 楼盘均价
+        REAL 入住年份
+        REAL 楼栋数
+        REAL 单元数
+        REAL 户数
+        TEXT 物业名称
+        TEXT 联系人
+        TEXT 电话
+        TEXT 门禁数量
+        TEXT 位置
+        REAL 经度
+        REAL 纬度
+        TEXT 备注
+        TEXT 数据来源
+        TEXT 更新时间
+        TEXT 状态
+    }
+
+    DAO_ZHA {
+        TEXT 点位ID PK
+        TEXT 行政区域
+        TEXT 商圈
+        TEXT 社区名称
+        TEXT 楼盘性质
+        TEXT 社区地址
+        TEXT 楼盘均价
+        TEXT 媒体数量
+        TEXT 媒体位置
+        TEXT 备注
+    }
+
+    LED {
+        INTEGER id PK
+        TEXT 省份
+        TEXT 城市
+        TEXT 播控形式
+        TEXT 城市级别
+        TEXT 行政区
+        TEXT 商圈
+        TEXT 点位名称
+        TEXT 场景
+        TEXT 位置
+        TEXT 详细地址
+        REAL 刊例价
+        TEXT 覆盖人群
+        REAL 经度
+        REAL 纬度
+    }
+
+    SMART_SCREEN_2025 {
+        INTEGER id PK
+        TEXT 所属省份
+        TEXT 所属城市
+        TEXT 区县
+        TEXT 楼盘名称
+        TEXT 详细地址
+        INTEGER 设备数量
+        REAL 经度
+        REAL 纬度
+        TEXT 坐标来源
+        TEXT 备注
+    }
+
+    SMART_SCREEN_L9 {
+        INTEGER id PK
+        TEXT 省份
+        TEXT 城市
+        TEXT 区域
+        TEXT 楼盘名称
+        TEXT 楼盘类型
+        INTEGER 总户数
+        REAL 楼盘价格
+        TEXT 位置名称
+        TEXT 详细地址
+        REAL 经度
+        REAL 纬度
+        TEXT 备注
+    }
+
+    CLIENT_CONTACTS {
+        TEXT 客户简称 PK
+        TEXT 品牌名称
+        TEXT 决策城市
+        TEXT 行业
+        TEXT 联系人
+        TEXT 部门
+        TEXT 职务
+        TEXT 座机
+        TEXT 手机
+        TEXT 组织机构
+        TEXT 备注
+        TEXT 最后更新时间
+    }
+
+    UNIT_DOOR ||--o{ ACCESS_DOOR : "同一城市/区域"
+    UNIT_DOOR ||--o{ DAO_ZHA : "同一城市/商圈"
+    UNIT_DOOR ||--o{ LED : "同一城市/商圈"
+    SMART_SCREEN_2025 ||--o{ SMART_SCREEN_L9 : "同一城市/楼盘"
+    CLIENT_CONTACTS }o--o{ UNIT_DOOR : "投放客户"

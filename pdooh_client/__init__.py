@@ -4,6 +4,8 @@ pDOOH Python 客户端库
 统一的 pDOOH API 客户端库，封装 MCP Server、Tom Agent、ROI Agent 和竞品 Agent 的所有接口。
 """
 
+__version__ = "1.0.0"
+
 from typing import Optional, Dict, Any
 
 from .config import PDOOHConfig

@@ -38,6 +38,16 @@ from app.common import (
     format_error_response,
 )
 
+# ── 导入数据库访问层 ────────────────────────────────────────────────────────────
+from app.db_dao import (
+    get_all_tables,
+    query_table,
+    get_table_stats,
+    search_table,
+    search_clients as dao_search_clients,
+    get_points_by_type,
+)
+
 # ── 日志 ────────────────────────────────────────────────────────────────────────
 logger = setup_logging("mcp_server", log_file="logs/mcp_server.log")
 logger.info("MCP Server 启动中...")
@@ -191,6 +201,11 @@ async def call_tool(request: ToolCallRequest):
             
             # 1.5 ROI 计算工具
             "pdooh_calc_roi": calc_roi,
+            
+            # 1.6 新增：本地数据库直接查询工具（qinlin_local.db）
+            "pdooh_query_pdooh_points": query_pdooh_points,
+            "pdooh_get_point_stats": get_point_stats,
+            "pdooh_search_clients": search_clients_mcp,
         }
         
         if request.name not in tool_handlers:
@@ -872,6 +887,207 @@ async def calc_roi(
     })
     
     return result
+    
+
+# ── 1.6 本地数据库新工具（直接查询 qinlin_local.db）────────────────────────
+
+@cached(ttl=300, maxsize=100)
+@monitor_performance_async(logger=logger)
+async def query_pdooh_points(
+    table_name: str,
+    filters: Optional[Dict[str, Any]] = None,
+    page: int = 1,
+    page_size: int = 20
+) -> Dict[str, Any]:
+    """
+    查询 pDOOH 点位数据（直接查询本地数据库）
+    
+    Args:
+        table_name: 表名（如 "单元门点位"、"门禁点位"、"道闸点位" 等）
+        filters: 筛选条件字典，支持：
+            - province: 省份（模糊匹配）
+            - city: 城市（模糊匹配）
+            - district: 区域/行政区（模糊匹配）
+            - business_district: 商圈（模糊匹配）
+            - min_price: 最低价格
+            - max_price: 最高价格
+        page: 页码（从 1 开始，默认 1）
+        page_size: 每页记录数（默认 20，最大 1000）
+        
+    Returns:
+        Dict[str, Any]: 包含数据和分页信息
+    """
+    logger.info(f"查询 pDOOH 点位: table={table_name}, filters={filters}, page={page}")
+    
+    try:
+        # 参数验证
+        if not table_name:
+            raise ValidationError(message="表名不能为空", details={"table_name": table_name})
+        
+        if page < 1:
+            raise ValidationError(message="page 必须大于等于 1", details={"page": page})
+        
+        if page_size < 1 or page_size > 1000:
+            raise ValidationError(message="page_size 必须在 1-1000 之间", details={"page_size": page_size})
+        
+        # 调用数据库访问层
+        from app.db_dao import query_table
+        result = query_table(
+            table_name=table_name,
+            filters=filters or {},
+            page=page,
+            page_size=page_size
+        )
+        
+        logger.info(f"查询成功: 返回 {len(result['data'])} 条记录，总计 {result['total']} 条")
+        
+        return {
+            "success": True,
+            "data": result["data"],
+            "pagination": {
+                "total": result["total"],
+                "page": result["page"],
+                "page_size": result["page_size"],
+                "total_pages": result["total_pages"]
+            }
+        }
+        
+    except ValueError as e:
+        logger.warning(f"参数验证失败: {str(e)}")
+        raise ValidationError(message=str(e), details={"table_name": table_name})
+    except FileNotFoundError as e:
+        logger.error(f"数据库文件不存在: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"查询失败: {str(e)}", exc_info=True)
+        raise
+
+
+@cached(ttl=600, maxsize=50)
+@monitor_performance_async(logger=logger)
+async def get_point_stats(
+    table_name: str,
+    group_by: str = "city"
+) -> Dict[str, Any]:
+    """
+    获取点位统计数据（直接查询本地数据库）
+    
+    Args:
+        table_name: 表名（如 "单元门点位"、"门禁点位" 等）
+        group_by: 分组字段（默认 "city"，可选值："city"、"province"、"business_district"）
+        
+    Returns:
+        Dict[str, Any]: 统计信息
+    """
+    logger.info(f"获取点位统计: table={table_name}, group_by={group_by}")
+    
+    try:
+        # 参数验证
+        if not table_name:
+            raise ValidationError(message="表名不能为空", details={"table_name": table_name})
+        
+        if group_by not in ["city", "province", "business_district"]:
+            raise ValidationError(
+                message="group_by 必须是 city/province/business_district 之一",
+                details={"group_by": group_by}
+            )
+        
+        # 调用数据库访问层
+        from app.db_dao import get_table_stats
+        stats = get_table_stats(table_name)
+        
+        # 根据 group_by 返回对应的统计
+        result_data = {
+            "total_count": stats["total_count"],
+            "has_coordinates": stats.get("has_coordinates", 0),
+            "null_coordinates": stats.get("null_coordinates", 0)
+        }
+        
+        if group_by == "city" and "city_stats" in stats:
+            result_data["group_stats"] = stats["city_stats"]
+            result_data["group_by"] = "city"
+        elif group_by == "province" and "province_stats" in stats:
+            result_data["group_stats"] = stats["province_stats"]
+            result_data["group_by"] = "province"
+        elif group_by == "business_district" and "商圈" in stats:
+            result_data["group_stats"] = stats.get("business_district_stats", {})
+            result_data["group_by"] = "business_district"
+        
+        logger.info(f"统计信息获取成功: {table_name}")
+        
+        return {
+            "success": True,
+            "data": result_data
+        }
+        
+    except ValueError as e:
+        logger.warning(f"参数验证失败: {str(e)}")
+        raise ValidationError(message=str(e), details={"table_name": table_name})
+    except FileNotFoundError as e:
+        logger.error(f"数据库文件不存在: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"获取统计信息失败: {str(e)}", exc_info=True)
+        raise
+
+
+@cached(ttl=300, maxsize=100)
+@monitor_performance_async(logger=logger)
+async def search_clients_mcp(
+    keyword: str,
+    city: Optional[str] = None,
+    industry: Optional[str] = None,
+    limit: int = 20
+) -> Dict[str, Any]:
+    """
+    搜索客户信息（从"客户通讯录"表）
+    
+    Args:
+        keyword: 搜索关键词（匹配客户简称或品牌名称）
+        city: 决策城市筛选（可选）
+        industry: 行业筛选（可选）
+        limit: 返回数量限制（默认 20，最大 500）
+        
+    Returns:
+        Dict[str, Any]: 匹配的客户列表
+    """
+    logger.info(f"搜索客户: keyword={keyword}, city={city}, industry={industry}, limit={limit}")
+    
+    try:
+        # 参数验证
+        if not keyword:
+            raise ValidationError(message="搜索关键词不能为空", details={"keyword": keyword})
+        
+        if limit < 1 or limit > 500:
+            raise ValidationError(message="limit 必须在 1-500 之间", details={"limit": limit})
+        
+        # 调用数据库访问层
+        from app.db_dao import search_clients as dao_search_clients
+        results = dao_search_clients(
+            keyword=keyword,
+            city=city,
+            industry=industry,
+            limit=limit
+        )
+        
+        logger.info(f"搜索完成: 找到 {len(results)} 条匹配记录")
+        
+        return {
+            "success": True,
+            "data": results,
+            "total": len(results)
+        }
+        
+    except ValueError as e:
+        logger.warning(f"参数验证失败: {str(e)}")
+        raise ValidationError(message=str(e), details={"keyword": keyword})
+    except FileNotFoundError as e:
+        logger.error(f"数据库文件不存在: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"搜索失败: {str(e)}", exc_info=True)
+        raise
+
 
 # ── 健康检查 ────────────────────────────────────────────────────────────────────
 
@@ -882,10 +1098,15 @@ async def health_check():
     return {
         "service": "pDOOH A2A MCP Server",
         "status": "ok",
-        "tools_count": 22,
+        "tools_count": 25,  # 22 + 3 新增工具
         "mcp_endpoint": "/api/v2/mcp/pdooh/tools/call",
         "skill_endpoint": "/api/v2/mcp/pdooh/skill.yaml",
-        "reference": "XX科技5V数据模型"
+        "reference": "XX科技5V数据模型",
+        "new_tools": [
+            "pdooh_query_pdooh_points",
+            "pdooh_get_point_stats",
+            "pdooh_search_clients"
+        ]
     }
 
 # ── Skill YAML 端点 ────────────────────────────────────────────────────────────
@@ -897,8 +1118,8 @@ async def get_skill_yaml():
     
     skill_yaml = """
 name: pDOOH MCP Server
-description: pDOOH 户外广告 AI 原生投放系统 MCP 服务器，提供 22 个工具
-version: 2.0.0
+description: pDOOH 户外广告 AI 原生投放系统 MCP 服务器，提供 25 个工具（含 3 个新增数据库查询工具）
+version: 2.1.0
 tools:
   - name: pdooh_query_screens
     description: 查询智能屏
@@ -1182,6 +1403,55 @@ tools:
         type: string
         required: false
         description: 价格类型（默认 exchange）
+  - name: pdooh_query_pdooh_points
+    description: 查询 pDOOH 点位数据（直接查询本地数据库 qinlin_local.db）
+    parameters:
+      - name: table_name
+        type: string
+        required: true
+        description: 表名（如 "单元门点位"、"门禁点位"、"道闸点位" 等）
+      - name: filters
+        type: object
+        required: false
+        description: 筛选条件（province/city/district/business_district/min_price/max_price）
+      - name: page
+        type: integer
+        required: false
+        description: 页码（默认 1）
+      - name: page_size
+        type: integer
+        required: false
+        description: 每页记录数（默认 20，最大 1000）
+  - name: pdooh_get_point_stats
+    description: 获取点位统计数据（按城市/省份/商圈分组）
+    parameters:
+      - name: table_name
+        type: string
+        required: true
+        description: 表名（如 "单元门点位"、"门禁点位" 等）
+      - name: group_by
+        type: string
+        required: false
+        description: 分组字段（city/province/business_district，默认 city）
+  - name: pdooh_search_clients
+    description: 搜索客户信息（从"客户通讯录"表）
+    parameters:
+      - name: keyword
+        type: string
+        required: true
+        description: 搜索关键词（匹配客户简称或品牌名称）
+      - name: city
+        type: string
+        required: false
+        description: 决策城市筛选
+      - name: industry
+        type: string
+        required: false
+        description: 行业筛选
+      - name: limit
+        type: integer
+        required: false
+        description: 返回数量限制（默认 20，最大 500）
 """
     
     return JSONResponse(content=skill_yaml, media_type="application/x-yaml")

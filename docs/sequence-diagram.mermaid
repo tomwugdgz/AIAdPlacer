@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant U as 用户/AI Agent
+    participant A as FastAPI Router
+    participant V as Pydantic Validator
+    participant D as db_dao.py
+    participant C as Cache
+    participant DB as SQLite Database
+
+    U->>A: GET /api/v2/db/单元门点位?city=广州&page=1&page_size=20
+    activate A
+    
+    A->>V: 验证查询参数
+    activate V
+    V->>V: 检查 city, page, page_size
+    V-->>A: 参数验证通过
+    deactivate V
+    
+    A->>D: query_table(table_name, filters, page, page_size)
+    activate D
+    
+    D->>DB: 检查表是否存在
+    activate DB
+    DB-->>D: 表存在
+    deactivate DB
+    
+    D->>DB: PRAGMA table_info(表名)
+    activate DB
+    DB-->>D: 返回字段列表
+    deactivate DB
+    
+    D->>D: 构建 WHERE 子句（动态）
+    
+    D->>DB: SELECT COUNT(*) FROM 表 WHERE ...
+    activate DB
+    DB-->>D: 返回总记录数 (total=150)
+    deactivate DB
+    
+    D->>DB: SELECT * FROM 表 WHERE ... LIMIT 20 OFFSET 0
+    activate DB
+    DB-->>D: 返回 20 条记录
+    deactivate DB
+    
+    D->>D: 转换为 Dict 列表
+    D-->>A: 返回 {data, total, page, page_size, total_pages}
+    deactivate D
+    
+    A->>A: 构建 JSON Response
+    A-->>U: HTTP 200 OK<br/>{success: true, data: [...], total: 150, ...}
+    deactivate A
