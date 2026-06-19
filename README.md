@@ -683,6 +683,63 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 
 ---
 
+## 📸 界面截图
+
+### 🎛️ 控制面板（Dashboard）
+![控制面板](screenshots/dashboard.png)
+
+*实时数据概览：点位统计、曝光量、点击率、活跃计划*
+
+### 🔍 点位查询（Point Search）
+![点位查询](screenshots/point-search.png)
+
+*智能筛选：城市/区域/媒体类型/价格区间*
+
+### 📅 投放计划（Ad Plans）
+![投放计划](screenshots/ad-plans.png)
+
+*计划管理：创建/编辑/暂停/结束，AI 优化建议*
+
+### 📊 ROI 计算器（ROI Calculator）
+![ROI 计算器](screenshots/roi-calculator.png)
+
+*智能预算分配：UV/PV/转化率/LTV/ROI 一键计算*
+
+### 🏆 竞品分析（Competitor Analysis）
+![竞品分析](screenshots/competitor-analysis.png)
+
+*市场洞察：份额对比/策略分析/趋势预测*
+
+### ⚙️ 系统设置（Settings）
+![系统设置](screenshots/settings.png)
+
+*配置管理：API Key/Token/数据库/缓存*
+
+---
+
+## 🌐 在线演示
+
+### 🎮 Web 管理界面
+- **本地演示**：打开 `web/index.html`（零依赖，双击即用）
+- **在线体验**：[http://duckwolf.cn/cps2.html](http://duckwolf.cn/cps2.html)
+- **界面预览**：[http://47.253.159.62:8888](http://47.253.159.62:8888)（Nginx 代理）
+
+### 📖 API 文档
+- **Swagger UI**：[http://47.253.159.62:5002/docs](http://47.253.159.62:5002/docs)
+- **ReDoc**：[http://47.253.159.62:5002/redoc](http://47.253.159.62:5002/redoc)
+
+### 🎯 MCP 接口（A2A）
+- **Skill YAML**：[http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml](http://47.253.159.62:5002/api/v2/mcp/pdooh/skill.yaml)
+- **工具列表**：[http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list](http://47.253.159.62:5002/api/v2/mcp/pdooh/tools/list)
+- **健康检查**：[http://47.253.159.62:5002/api/v2/mcp/pdooh/health](http://47.253.159.62:5002/api/v2/mcp/pdooh/health)
+
+### 📋 技术文档
+- **接口解说**：[http://duckwolf.cn/pd.html](http://duckwolf.cn/pd.html)
+- **技术博客**：[http://duckwolf.cn/cps1.html](http://duckwolf.cn/cps1.html)
+- **项目白皮书**：[docs/pdoh_whitepaper_v2.md](docs/pdoh_whitepaper_v2.md)
+
+---
+
 ## 📄 License
 
 MIT License —— 自由使用、修改、分发。请保留原作者信息。
