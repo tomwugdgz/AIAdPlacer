@@ -1,4 +1,4 @@
-# 🎯 AIAdPlacer — 户外广告行业的AI Copilot工具箱
+<img width="2523" height="1100" alt="ScreenShot_2026-06-19_224756_587" src="https://github.com/user-attachments/assets/7767d320-25bf-4cef-b73f-533141e25e24" /># 🎯 AIAdPlacer — 户外广告行业的AI Copilot工具箱
 
 核心价值：
 - 帮广告主做投放决策（AI分析+推荐）
@@ -686,12 +686,14 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 ## 📸 界面截图
 
 ### 🎛️ 控制面板（Dashboard）
-![控制面板](screenshots/dashboard.png)
+![控制面板]<img width="2523" height="1100" alt="ScreenShot_2026-06-19_224756_587" src="https://github.com/user-attachments/assets/886b7890-62ce-478f-aa48-07dbd02a1ac5" />
+
 
 *实时数据概览：点位统计、曝光量、点击率、活跃计划*
 
 ### 🔍 点位查询（Point Search）
-![点位查询](screenshots/point-search.png)
+![点位查询]<img width="2493" height="1245" alt="ScreenShot_2026-06-19_224855_063" src="https://github.com/user-attachments/assets/64b656c0-cd7d-4499-bf39-5b372b6fde48" />
+
 
 *智能筛选：城市/区域/媒体类型/价格区间*
 
@@ -711,7 +713,8 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 *市场洞察：份额对比/策略分析/趋势预测*
 
 ### ⚙️ 系统设置（Settings）
-![系统设置](screenshots/settings.png)
+![系统设置]![Uploading ScreenShot_2026-06-19_225011_780.png…]()
+
 
 *配置管理：API Key/Token/数据库/缓存*
 
