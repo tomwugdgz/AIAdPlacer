@@ -1,4 +1,4 @@
-<img width="2523" height="1100" alt="ScreenShot_2026-06-19_224756_587" src="https://github.com/user-attachments/assets/7767d320-25bf-4cef-b73f-533141e25e24" /># 🎯 AIAdPlacer — 户外广告行业的AI Copilot工具箱
+# 🎯 AIAdPlacer — 户外广告行业的AI Copilot工具箱
 
 核心价值：
 - 帮广告主做投放决策（AI分析+推荐）
@@ -686,7 +686,8 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 ## 📸 界面截图
 
 ### 🎛️ 控制面板（Dashboard）
-![控制面板]<img width="2523" height="1100" alt="ScreenShot_2026-06-19_224756_587" src="https://github.com/user-attachments/assets/886b7890-62ce-478f-aa48-07dbd02a1ac5" />
+![控制面板]<img width="2450" height="1113" alt="ScreenShot_2026-06-19_225619_151" src="https://github.com/user-attachments/assets/13a7f1dc-cf52-4b65-899d-8a36ebd2480c" />
+
 
 
 *实时数据概览：点位统计、曝光量、点击率、活跃计划*
