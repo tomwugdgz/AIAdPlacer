@@ -1,0 +1,152 @@
+# ═══════════════════════════════════════════════════════════
+# pDOOH 服务端 Docker Compose 配置
+# ═══════════════════════════════════════════════════════════
+# 启动方式:
+#   1. 确保 .env 文件已配置
+#   2. 运行: docker-compose up -d
+#   3. 查看日志: docker-compose logs -f
+#   4. 停止服务: docker-compose down
+#
+# 服务端口:
+#   - 5002: MCP Server (pDOOH MCP 工具)
+#   - 5003: Tom Agent (户外广告投放专家)
+#   - 5004: ROI Agent (ROI 计算专家)
+#   - 5005: Competitor Agent (竞品监测)
+#
+# 数据持久化:
+#   - ./data:/app/data (知识库、数据库文件)
+#   - ./logs:/app/logs (日志文件)
+# ═══════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ── pDOOH 后端服务（所有 Agent）────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdoh-backend
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "5002:5002"  # MCP Server
+      - "5003:5003"  # Tom Agent
+      - "5004:5004"  # ROI Agent
+      - "5005:5005"  # Competitor Agent
+    
+    # 环境变量（从 .env 文件读取）
+    env_file:
+      - .env
+    
+    # 数据卷（持久化）
+    volumes:
+      - ./data:/app/data          # 知识库、SQLite 数据库
+      - ./logs:/app/logs          # 日志文件
+      - ./亲邻单元门智能框架.db:/app/亲邻单元门智能框架.db
+      - ./亲邻门禁全国点位.db:/app/亲邻门禁全国点位.db
+      - ./亲邻广州道闸.db:/app/亲邻广州道闸.db
+      - ./亲邻商场LED.db:/app/亲邻商场LED.db
+    
+    # 依赖服务（如有）
+    depends_on: []
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; resp = httpx.get('http://127.0.0.1:5002/health'); exit(0 if resp.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    networks:
+      - pdoh-network
+
+  # ── Redis（可选，用于缓存和异步任务）────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: pdoh-redis
+    restart: unless-stopped
+    
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      - redis-data:/data
+    
+    command: redis-server --appendonly yes
+    
+    networks:
+      - pdoh-network
+
+  # ── PostgreSQL（可选，生产环境推荐）────────────────────
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: pdoh-postgres
+  #   restart: unless-stopped
+  #   
+  #   ports:
+  #     - "5432:5432"
+  #   
+  #   environment:
+  #     POSTGRES_USER: pdoh
+  #     POSTGRES_PASSWORD: pdoh123
+  #     POSTGRES_DB: pdoh
+  #   
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   
+  #   networks:
+  #     - pdoh-network
+
+# ── 网络定义 ─────────────────────────────────────────────────
+networks:
+  pdoh-network:
+    driver: bridge
+
+# ── 数据卷定义 ─────────────────────────────────────────────
+volumes:
+  redis-data:
+    driver: local
+  # postgres-data:
+  #   driver: local
+
+# ═══════════════════════════════════════════════════════════
+# 快速启动指南
+# ═══════════════════════════════════════════════════════════
+# 
+# 1. 配置环境变量:
+#    cp .env.example .env
+#    # 编辑 .env 文件，填入正确的配置
+#
+# 2. 启动服务:
+#    docker-compose up -d
+#
+# 3. 查看日志:
+#    docker-compose logs -f
+#
+# 4. 检查服务状态:
+#    docker-compose ps
+#
+# 5. 停止服务:
+#    docker-compose down
+#
+# 6. 停止并删除数据卷:
+#    docker-compose down -v
+#
+# ═══════════════════════════════════════════════════════════
+# 
+# 启用 PostgreSQL:
+#   1. 取消注释上面的 postgres 服务定义
+#   2. 在 .env 中设置: DATABASE_URL=postgresql://pdoh:pdoh123@postgres:5432/pdoh
+#   3. 重新启动: docker-compose up -d
+#
+# ═══════════════════════════════════════════════════════════

@@ -13,17 +13,32 @@ import os
 import sys
 import json
 import math
-from typing import Optional, List, Dict, Any
+import asyncio
+import time
+from typing import Optional, List, Dict, Any, Callable
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
+# ── 导入公共模块 ────────────────────────────────────────────────────────────────
+from app.common import (
+    setup_logging,
+    PDOOHError,
+    ValidationError,
+    monitor_performance,
+    monitor_performance_async,
+    cached,
+    retry_async,
+    validate_params,
+    generate_request_id,
+    format_error_response,
+)
+
 # ── 日志 ────────────────────────────────────────────────────────────────────────
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("roi_agent")
+logger = setup_logging("roi_agent", log_file="logs/roi_agent.log")
+logger.info("ROI Agent 启动中...")
 
 router = APIRouter(prefix="/api/v2/roi", tags=["ROI Agent"])
 
@@ -167,24 +182,46 @@ def adjust_params_by_context(city: str = None, product: str = None, U: float = N
     根据城市和产品类型自动调整参数
     
     返回调整后的参数字典
+    
+    Args:
+        city: 投放城市（如 "广州"、"北京"）
+        product: 产品类型（如 "牙膏"、"洗发水"）
+        U: 每栋楼户数（如果提供，则使用提供值）
+        a: 客单价（如果提供，则使用提供值）
+        r: 记忆率（如果提供，则使用提供值）
+        f: 复购系数（如果提供，则使用提供值）
+        
+    Returns:
+        Dict[str, Any]: 调整后的参数字典
+        
+    Example:
+        >>> params = adjust_params_by_context(city="广州", product="牙膏")
+        >>> print(params["U"])  # 输出: 80（一线城市）
     """
     params = DEFAULT_PARAMS.copy()
+    
+    # 记录调整前的参数值
+    logger.debug(f"参数调整前: U={params['U']}, beta={params['beta']}, a_neutral={params['a_neutral']}")
     
     # 如果传入了具体值，使用传入值
     if U is not None:
         params["U"] = U
+        logger.info(f"使用用户指定的 U 值: {U}")
     if a is not None:
         params["a_neutral"] = a
         params["a_pessimistic"] = a * 0.9
         params["a_optimistic"] = a * 1.15
+        logger.info(f"使用用户指定的 a 值: {a}")
     if r is not None:
         params["r_neutral"] = r
         params["r_pessimistic"] = r * 0.85
         params["r_optimistic"] = r * 1.2
+        logger.info(f"使用用户指定的 r 值: {r}")
     if f is not None:
         params["f_neutral"] = f
         params["f_pessimistic"] = f * 0.95
         params["f_optimistic"] = f * 1.05
+        logger.info(f"使用用户指定的 f 值: {f}")
     
     # 根据城市调整参数
     if city:
@@ -200,6 +237,7 @@ def adjust_params_by_context(city: str = None, product: str = None, U: float = N
             params["r_neutral"] = city_params["r_base"]
             params["r_pessimistic"] = city_params["r_base"] * 0.85
             params["r_optimistic"] = city_params["r_base"] * 1.2
+        logger.info(f"根据城市 {city}（{city_tier}）调整参数: U={params['U']}, beta={params['beta']}")
     
     # 根据产品类型调整参数
     if product:
@@ -216,6 +254,10 @@ def adjust_params_by_context(city: str = None, product: str = None, U: float = N
         params["f_neutral"] *= product_params["f_mult"]
         params["f_pessimistic"] = params["f_neutral"] * 0.95
         params["f_optimistic"] = params["f_neutral"] * 1.05
+        logger.info(f"根据产品 {product}（{product_type}）调整参数: r_neutral={params['r_neutral']}, a_neutral={params['a_neutral']}, f_neutral={params['f_neutral']}")
+    
+    # 记录调整后的参数值
+    logger.debug(f"参数调整后: U={params['U']}, beta={params['beta']}, a_neutral={params['a_neutral']}, r_neutral={params['r_neutral']}, f_neutral={params['f_neutral']}")
     
     return params
 
@@ -224,7 +266,7 @@ def adjust_params_by_context(city: str = None, product: str = None, U: float = N
 def calc_uv(N: int, U: float, P: float, beta: float) -> int:
     """
     UV（独立触达人数）= N × U × P × β
-
+    
     参数来源：
     - N: 本方案设定
     - U: MCP 数据库 711 广州楼盘中位数
@@ -236,7 +278,7 @@ def calc_uv(N: int, U: float, P: float, beta: float) -> int:
 def calc_pv(uv: int, gamma: float, T: int) -> int:
     """
     PV（总曝光次数）= UV × γ × T
-
+    
     - γ: 单面灯箱 2.0 次/户/日（双面 3.8）
     - T: 投放天数
     """
@@ -251,7 +293,7 @@ def calc_recall_uv(uv: int, r: float) -> int:
 def calc_conversion(recall_uv: int, c: float = 0.02) -> int:
     """
     转化人数 = 记忆人数 × 转化率(c)
-
+    
     - c: 记忆→购买转化率（默认 2%）
     """
     return int(recall_uv * c)
@@ -265,7 +307,7 @@ def calc_first_sale(conversions: int, a: float) -> float:
 def calc_ltv(first_sale: float, f: float, weeks: int = 8) -> float:
     """
     LTV（生命周期价值）= 首期销售 × (1 + 复购系数(f))
-
+    
     注：本方案采用 8 周 LTV（牙膏使用周期 1-3 月）
     - f: 复购系数（悲观 1.3 / 中性 1.4 / 乐观 1.5）
     """
@@ -274,13 +316,14 @@ def calc_ltv(first_sale: float, f: float, weeks: int = 8) -> float:
 def calc_roi(ltv: float, cost: float) -> float:
     """
     ROI（投资回报率）= (LTV - 投入成本) / 投入成本 × 100%
-
+    
     返回百分比（如 181.6 表示 181.6%）
     """
     if cost == 0:
         return float('inf')
     return (ltv - cost) / cost * 100
 
+@monitor_performance
 def calc_roi_full(
     N: int = 5000,
     U: float = 100,
@@ -297,9 +340,32 @@ def calc_roi_full(
 ) -> Dict[str, Any]:
     """
     完整 ROI 计算（调用所有子公式）
-
+    
     返回包含所有中间结果的字典
+    
+    Args:
+        N: 广告框数（个）
+        U: 每栋楼户数（户/栋）
+        P: 每户人数（人/户）
+        beta: 接触率（%）
+        gamma: 每日接触频次（次/户/日）
+        T: 投放天数（天）
+        r: 记忆率（0-1）
+        a: 客单价（元）
+        f: 复购系数
+        c: 转化率（0-1）
+        cost: 投入成本（元）
+        weeks: LTV 计算周期（周）
+        
+    Returns:
+        Dict[str, Any]: 包含参数、中间结果和最终结果的字典
+        
+    Example:
+        >>> result = calc_roi_full(N=5000, cost=100000)
+        >>> print(result["result"]["roi_percent"])
     """
+    logger.info(f"开始计算 ROI: N={N}, U={U}, cost={cost}")
+    
     uv = calc_uv(N, U, P, beta)
     pv = calc_pv(uv, gamma, T)
     recall = calc_recall_uv(uv, r)
@@ -307,7 +373,9 @@ def calc_roi_full(
     first_sale = calc_first_sale(conversions, a)
     ltv = calc_ltv(first_sale, f, weeks)
     roi = calc_roi(ltv, cost)
-
+    
+    logger.info(f"ROI 计算完成: ROI={roi:.2f}%, LTV={ltv:.2f}")
+    
     return {
         "params": {
             "N": N, "U": U, "P": P, "beta": beta,
@@ -331,6 +399,7 @@ def calc_roi_full(
         }
     }
 
+@cached(ttl=300, maxsize=100)  # 缓存 5 分钟，最多 100 条
 def calc_three_scenarios(
     N: int = 5000,
     U: float = 100,
@@ -346,14 +415,42 @@ def calc_three_scenarios(
 ) -> Dict[str, Any]:
     """
     计算三场景 ROI（悲观/中性/乐观）
-
+    
     返回三个场景的完整计算结果
     
     新增参数：
     - r_neutral: 中性场景记忆率（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
     - a_neutral: 中性场景客单价（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
     - f_neutral: 中性场景复购系数（如果提供，使用该值；否则使用 DEFAULT_PARAMS）
+    
+    Args:
+        N: 广告框数（个）
+        U: 每栋楼户数（户/栋）
+        P: 每户人数（人/户）
+        beta: 接触率（%）
+        gamma: 每日接触频次（次/户/日）
+        T: 投放天数（天）
+        cost: 投入成本（元）
+        weeks: LTV 计算周期（周）
+        r_neutral: 中性场景记忆率
+        a_neutral: 中性场景客单价
+        f_neutral: 中性场景复购系数
+        
+    Returns:
+        Dict[str, Any]: 三个场景的计算结果
+        
+    Example:
+        >>> results = calc_three_scenarios(N=5000, cost=100000, city="广州")
+        >>> print(results["neutral"]["roi_percent"])
     """
+    logger.info(f"开始计算三场景 ROI: N={N}, cost={cost}, T={T}")
+    if r_neutral is not None:
+        logger.info(f"使用指定的 r_neutral: {r_neutral}")
+    if a_neutral is not None:
+        logger.info(f"使用指定的 a_neutral: {a_neutral}")
+    if f_neutral is not None:
+        logger.info(f"使用指定的 f_neutral: {f_neutral}")
+    
     params = DEFAULT_PARAMS.copy()
     
     # 使用传入的参数（如果提供）
@@ -369,7 +466,7 @@ def calc_three_scenarios(
         params["f_neutral"] = f_neutral
         params["f_pessimistic"] = f_neutral * 0.95
         params["f_optimistic"] = f_neutral * 1.05
-
+    
     scenarios = {
         "pessimistic": {
             "r": params["r_pessimistic"],
@@ -393,7 +490,7 @@ def calc_three_scenarios(
             "desc": "双面+智能屏 4周",
         },
     }
-
+    
     results = {}
     for key, scen in scenarios.items():
         result = calc_roi_full(
@@ -417,10 +514,12 @@ def calc_three_scenarios(
             "roi_percent": result["result"]["roi_percent"],
             "net_profit": result["result"]["net_profit"],
         }
-
+    
+    logger.info(f"三场景 ROI 计算完成: 悲观={results['pessimistic']['roi_percent']:.2f}%, 中性={results['neutral']['roi_percent']:.2f}%, 乐观={results['optimistic']['roi_percent']:.2f}%")
+    
     return results
 
-# ── 请求/响应模型 ────────────────────────────────────────────────────────────────
+# ── 请求/响应模型 ─────────────────────────────────────────────────────────────
 
 class ROICalculateRequest(BaseModel):
     """ROI 计算请求"""
@@ -434,7 +533,7 @@ class ROICalculateRequest(BaseModel):
 
     r: float = Field(0.18, description="记忆率（0-1）")
     a: float = Field(22, description="客单价（元）")
-    f: float = Field(1.4, description="复购系数")
+    f: float = Field(1.4, description="复购系数（倍）")
 
     c: float = Field(0.02, description="转化率（0-1）")
 
@@ -450,6 +549,7 @@ class ROICalculateRequest(BaseModel):
 
 class ROICalculateResponse(BaseModel):
     """ROI 计算响应"""
+    request_id: Optional[str] = None
     scenario: Optional[str] = None
     uv: int
     pv: int
@@ -461,6 +561,8 @@ class ROICalculateResponse(BaseModel):
     net_profit: float
     params: Dict[str, Any]
     formula: str
+    auto_adjusted: Optional[bool] = None
+    adjust_info: Optional[Dict[str, Any]] = None
 
 class SensitivityRequest(BaseModel):
     """灵敏度分析请求"""
@@ -484,111 +586,157 @@ class CompareResponse(BaseModel):
     scenarios: List[Dict[str, Any]]
     summary: str
 
-# ── API 端点 ──────────────────────────────────────────────────────────────────────
+# ── API 端点 ─────────────────────────────────────────────────────────────────────
 
 @router.get("/health")
 async def health_check():
     """健康检查"""
-    return {"status": "ok", "agent": "ROI Agent", "version": "2.2.0"}
+    logger.info("收到健康检查请求")
+    return {"status": "ok", "agent": "ROI Agent", "version": "2.3.0"}
 
 @router.post("/calculate", response_model=Dict[str, Any])
+@monitor_performance_async(logger=logger)
 async def calculate_roi(req: ROICalculateRequest):
     """
     ROI 计算（支持三场景预设 + 参数自动调整）
-
+    
     传入 scenario 可快速计算预设场景：
     - pessimistic: 悲观（记忆率 0.15 / 客单 ¥20 / 复购 1.3）
     - neutral: 中性（记忆率 0.18 / 客单 ¥22 / 复购 1.4）
     - optimistic: 乐观（记忆率 0.22 / 客单 ¥25 / 复购 1.5）
-
+    
     传入 city 和 product 可自动调整参数：
     - city: 投放城市（一线城市/新一线城市/二线城市/三线及以下）
     - product: 产品类型（日化/食品/家电/母婴/汽车/其他）
     - auto_adjust: 是否自动调整参数（默认 True）
+    
+    Args:
+        req: ROI 计算请求对象
+        
+    Returns:
+        Dict[str, Any]: ROI 计算结果
+        
+    Raises:
+        HTTPException: 参数验证失败或计算错误
     """
-    # 参数自动调整
-    adjusted = False
-    adjust_info = {}
-    if req.auto_adjust and (req.city or req.product):
-        adjusted_params = adjust_params_by_context(
-            city=req.city, 
-            product=req.product,
-            U=req.U if req.U != 100 else None,  # 如果用户没改默认值，允许自动调整
-            a=req.a if req.a != 22 else None,
-            r=req.r if req.r != 0.18 else None,
-            f=req.f if req.f != 1.4 else None,
-        )
-        # 更新 req 的参数
-        req.U = adjusted_params["U"]
-        req.beta = adjusted_params["beta"]
-        req.r = adjusted_params["r_neutral"]
-        req.a = adjusted_params["a_neutral"]
-        req.f = adjusted_params["f_neutral"]
-        adjusted = True
-        adjust_info = {
-            "city_tier": detect_city_tier(req.city) if req.city else None,
-            "product_type": detect_product_type(req.product) if req.product else None,
-            "adjusted_params": {
-                "U": adjusted_params["U"],
-                "beta": adjusted_params["beta"],
-                "r": adjusted_params["r_neutral"],
-                "a": adjusted_params["a_neutral"],
-                "f": adjusted_params["f_neutral"],
+    request_id = generate_request_id("roi")
+    logger.info(f"收到 ROI 计算请求 [{request_id}]: N={req.N}, cost={req.cost}, city={req.city}, product={req.product}")
+    
+    try:
+        # 参数验证
+        if req.N <= 0:
+            raise ValidationError(message="广告框数 N 必须大于 0", details={"N": req.N})
+        if req.cost <= 0:
+            raise ValidationError(message="投入成本 cost 必须大于 0", details={"cost": req.cost})
+        if not (0 < req.r <= 1):
+            raise ValidationError(message="记忆率 r 必须在 (0, 1] 范围内", details={"r": req.r})
+        if req.a <= 0:
+            raise ValidationError(message="客单价 a 必须大于 0", details={"a": req.a})
+        if req.f < 1:
+            raise ValidationError(message="复购系数 f 必须 ≥ 1", details={"f": req.f})
+        
+        logger.debug(f"参数验证通过 [{request_id}]")
+        
+        # 参数自动调整
+        adjusted = False
+        adjust_info = {}
+        if req.auto_adjust and (req.city or req.product):
+            logger.info(f"开始自动调整参数 [{request_id}]: city={req.city}, product={req.product}")
+            adjusted_params = adjust_params_by_context(
+                city=req.city, 
+                product=req.product,
+                U=req.U if req.U != 100 else None,  # 如果用户没改默认值，允许自动调整
+                a=req.a if req.a != 22 else None,
+                r=req.r if req.r != 0.18 else None,
+                f=req.f if req.f != 1.4 else None,
+            )
+            # 更新 req 的参数
+            req.U = adjusted_params["U"]
+            req.beta = adjusted_params["beta"]
+            req.r = adjusted_params["r_neutral"]
+            req.a = adjusted_params["a_neutral"]
+            req.f = adjusted_params["f_neutral"]
+            adjusted = True
+            adjust_info = {
+                "city_tier": detect_city_tier(req.city) if req.city else None,
+                "product_type": detect_product_type(req.product) if req.product else None,
+                "adjusted_params": {
+                    "U": adjusted_params["U"],
+                    "beta": adjusted_params["beta"],
+                    "r": adjusted_params["r_neutral"],
+                    "a": adjusted_params["a_neutral"],
+                    "f": adjusted_params["f_neutral"],
+                }
             }
+            logger.info(f"参数自动调整完成 [{request_id}]: U={req.U}, beta={req.beta}, r={req.r}, a={req.a}, f={req.f}")
+        
+        # 如果指定了预设场景，覆盖对应参数
+        if req.scenario:
+            logger.info(f"使用预设场景 [{request_id}]: {req.scenario}")
+            scen_params = {
+                "pessimistic": {"r": req.r * 0.85, "a": req.a * 0.9, "f": req.f * 0.95},
+                "neutral": {"r": req.r, "a": req.a, "f": req.f},
+                "optimistic": {"r": req.r * 1.2, "a": req.a * 1.15, "f": req.f * 1.05},
+            }
+            if req.scenario in scen_params:
+                sp = scen_params[req.scenario]
+                req.r = sp["r"]
+                req.a = sp["a"]
+                req.f = sp["f"]
+                logger.info(f"场景参数覆盖 [{request_id}]: r={req.r}, a={req.a}, f={req.f}")
+            else:
+                raise HTTPException(status_code=400, detail=f"未知场景: {req.scenario}")
+        
+        # 执行计算
+        logger.info(f"开始计算 ROI [{request_id}]...")
+        result = calc_roi_full(
+            N=req.N, U=req.U, P=req.P, beta=req.beta,
+            gamma=req.gamma, T=req.T,
+            r=req.r, a=req.a, f=req.f,
+            c=req.c, cost=req.cost, weeks=req.weeks,
+        )
+        logger.info(f"ROI 计算完成 [{request_id}]: ROI={result['result']['roi_percent']:.2f}%")
+        
+        # 构建公式描述
+        formula_desc = (
+            f"UV = N×U×P×β = {req.N}×{req.U}×{req.P}×{req.beta} = {result['intermediates']['uv']}\n"
+            f"PV = UV×γ×T = {result['intermediates']['uv']}×{req.gamma}×{req.T} = {result['intermediates']['pv']}\n"
+            f"记忆人数 = UV×r = {result['intermediates']['uv']}×{req.r} = {result['intermediates']['recall']}\n"
+            f"转化人数 = 记忆×c = {result['intermediates']['recall']}×{req.c} = {result['intermediates']['conversions']}\n"
+            f"首期销售 = 转化×a = {result['intermediates']['conversions']}×{req.a} = {result['intermediates']['first_sale']:.2f}\n"
+            f"LTV = 首期×f = {result['intermediates']['first_sale']:.2f}×{req.f} = {result['result']['ltv']:.2f}\n"
+            f"ROI = (LTV-成本)/成本×100% = ({result['result']['ltv']:.2f}-{req.cost})/{req.cost}×100% = {result['result']['roi_percent']:.2f}%"
+        )
+        
+        response = {
+            "request_id": request_id,
+            "scenario": req.scenario,
+            "uv": result["intermediates"]["uv"],
+            "pv": result["intermediates"]["pv"],
+            "recall": result["intermediates"]["recall"],
+            "conversions": result["intermediates"]["conversions"],
+            "first_sale": result["intermediates"]["first_sale"],
+            "ltv": result["result"]["ltv"],
+            "roi_percent": result["result"]["roi_percent"],
+            "net_profit": result["result"]["net_profit"],
+            "params": result["params"],
+            "formula": formula_desc,
         }
-    
-    # 如果指定了预设场景，覆盖对应参数
-    if req.scenario:
-        scen_params = {
-            "pessimistic": {"r": req.r * 0.85, "a": req.a * 0.9, "f": req.f * 0.95},
-            "neutral": {"r": req.r, "a": req.a, "f": req.f},
-            "optimistic": {"r": req.r * 1.2, "a": req.a * 1.15, "f": req.f * 1.05},
-        }
-        if req.scenario in scen_params:
-            sp = scen_params[req.scenario]
-            req.r = sp["r"]
-            req.a = sp["a"]
-            req.f = sp["f"]
-        else:
-            raise HTTPException(status_code=400, detail=f"未知场景: {req.scenario}")
-
-    result = calc_roi_full(
-        N=req.N, U=req.U, P=req.P, beta=req.beta,
-        gamma=req.gamma, T=req.T,
-        r=req.r, a=req.a, f=req.f,
-        c=req.c, cost=req.cost, weeks=req.weeks,
-    )
-
-    formula_desc = (
-        f"UV = N×U×P×β = {req.N}×{req.U}×{req.P}×{req.beta} = {result['intermediates']['uv']}\n"
-        f"PV = UV×γ×T = {result['intermediates']['uv']}×{req.gamma}×{req.T} = {result['intermediates']['pv']}\n"
-        f"记忆人数 = UV×r = {result['intermediates']['uv']}×{req.r} = {result['intermediates']['recall']}\n"
-        f"转化人数 = 记忆×c = {result['intermediates']['recall']}×{req.c} = {result['intermediates']['conversions']}\n"
-        f"首期销售 = 转化×a = {result['intermediates']['conversions']}×{req.a} = {result['intermediates']['first_sale']:.2f}\n"
-        f"LTV = 首期×f = {result['intermediates']['first_sale']:.2f}×{req.f} = {result['result']['ltv']:.2f}\n"
-        f"ROI = (LTV-成本)/成本×100% = ({result['result']['ltv']:.2f}-{req.cost})/{req.cost}×100% = {result['result']['roi_percent']:.2f}%"
-    )
-
-    response = {
-        "scenario": req.scenario,
-        "uv": result["intermediates"]["uv"],
-        "pv": result["intermediates"]["pv"],
-        "recall": result["intermediates"]["recall"],
-        "conversions": result["intermediates"]["conversions"],
-        "first_sale": result["intermediates"]["first_sale"],
-        "ltv": result["result"]["ltv"],
-        "roi_percent": result["result"]["roi_percent"],
-        "net_profit": result["result"]["net_profit"],
-        "params": result["params"],
-        "formula": formula_desc,
-    }
-    
-    # 增加参数调整说明
-    if adjusted:
-        response["auto_adjusted"] = True
-        response["adjust_info"] = adjust_info
-    
-    return response
+        
+        # 增加参数调整说明
+        if adjusted:
+            response["auto_adjusted"] = True
+            response["adjust_info"] = adjust_info
+        
+        logger.info(f"ROI 计算请求处理完成 [{request_id}]")
+        return response
+        
+    except ValidationError as e:
+        logger.warning(f"参数验证失败 [{request_id}]: {e.message}, details={e.details}")
+        return JSONResponse(status_code=400, content=format_error_response(e, request_id=request_id))
+    except Exception as e:
+        logger.error(f"ROI 计算失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
 
 @router.get("/three-scenarios")
 async def get_three_scenarios(
@@ -601,7 +749,7 @@ async def get_three_scenarios(
 ):
     """
     快速获取三场景 ROI（悲观/中性/乐观）
-
+    
     查询参数：
     - N: 广告框数（默认 5000）
     - cost: 投入成本（默认 100000）
@@ -610,185 +758,280 @@ async def get_three_scenarios(
     - product: 产品类型（用于自动调整参数）
     - auto_adjust: 是否自动调整参数（默认 True）
     """
-    # 参数自动调整
-    if auto_adjust and (city or product):
-        adjusted_params = adjust_params_by_context(city=city, product=product)
-        U = adjusted_params["U"]
-        beta = adjusted_params["beta"]
-        r_neutral = adjusted_params["r_neutral"]
-        a_neutral = adjusted_params["a_neutral"]
-        f_neutral = adjusted_params["f_neutral"]
-        results = calc_three_scenarios(
-            N=N, U=U, P=2.51, beta=beta,
-            gamma=2.0, T=T,
-            cost=cost,
-            r_neutral=r_neutral, a_neutral=a_neutral, f_neutral=f_neutral
-        )
-        return {
-            "scenarios": results,
-            "auto_adjusted": True,
-            "city_tier": detect_city_tier(city) if city else None,
-            "product_type": detect_product_type(product) if product else None,
-        }
+    request_id = generate_request_id("three_scenarios")
+    logger.info(f"收到三场景 ROI 请求 [{request_id}]: N={N}, cost={cost}, T={T}, city={city}, product={product}")
     
-    results = calc_three_scenarios(N=N, cost=cost, T=T)
-    return {"scenarios": results}
+    try:
+        # 参数验证
+        if N <= 0:
+            raise ValidationError(message="广告框数 N 必须大于 0", details={"N": N})
+        if cost <= 0:
+            raise ValidationError(message="投入成本 cost 必须大于 0", details={"cost": cost})
+        if T <= 0:
+            raise ValidationError(message="投放天数 T 必须大于 0", details={"T": T})
+        
+        logger.debug(f"参数验证通过 [{request_id}]")
+        
+        # 参数自动调整
+        if auto_adjust and (city or product):
+            logger.info(f"开始自动调整参数 [{request_id}]: city={city}, product={product}")
+            adjusted_params = adjust_params_by_context(city=city, product=product)
+            U = adjusted_params["U"]
+            beta = adjusted_params["beta"]
+            r_neutral = adjusted_params["r_neutral"]
+            a_neutral = adjusted_params["a_neutral"]
+            f_neutral = adjusted_params["f_neutral"]
+            results = calc_three_scenarios(
+                N=N, U=U, P=2.51, beta=beta,
+                gamma=2.0, T=T,
+                cost=cost,
+                r_neutral=r_neutral, a_neutral=a_neutral, f_neutral=f_neutral
+            )
+            response = {
+                "request_id": request_id,
+                "scenarios": results,
+                "auto_adjusted": True,
+                "city_tier": detect_city_tier(city) if city else None,
+                "product_type": detect_product_type(product) if product else None,
+            }
+            logger.info(f"三场景 ROI 请求处理完成（含参数调整） [{request_id}]")
+            return response
+        
+        results = calc_three_scenarios(N=N, cost=cost, T=T)
+        response = {
+            "request_id": request_id,
+            "scenarios": results,
+        }
+        logger.info(f"三场景 ROI 请求处理完成 [{request_id}]")
+        return response
+        
+    except ValidationError as e:
+        logger.warning(f"参数验证失败 [{request_id}]: {e.message}, details={e.details}")
+        return JSONResponse(status_code=400, content=format_error_response(e, request_id=request_id))
+    except Exception as e:
+        logger.error(f"三场景 ROI 计算失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
 
 @router.post("/sensitivity", response_model=SensitivityResponse)
+@monitor_performance_async(logger=logger)
 async def sensitivity_analysis(req: SensitivityRequest):
     """
     灵敏度分析：单参数变动对 ROI 的影响
-
+    
     用于分析哪个参数对 ROI 影响最大（敏感性分析）
     """
-    base = req.base_params
-    roi_values = []
-    ltv_values = []
+    request_id = generate_request_id("sensitivity")
+    logger.info(f"收到灵敏度分析请求 [{request_id}]: variable={req.variable}, values={req.values}")
+    
+    try:
+        # 参数验证
+        if not req.variable:
+            raise ValidationError(message="variable 参数不能为空", details={"variable": req.variable})
+        if not req.values or len(req.values) == 0:
+            raise ValidationError(message="values 参数必须非空", details={"values": req.values})
+        
+        logger.debug(f"参数验证通过 [{request_id}]")
+        
+        base = req.base_params
+        roi_values = []
+        ltv_values = []
 
-    for val in req.values:
-        # 复制基础参数，修改目标变量
-        params = base.model_dump()
-        params[req.variable] = val
+        for val in req.values:
+            # 复制基础参数，修改目标变量
+            params = base.model_dump()
+            params[req.variable] = val
 
-        result = calc_roi_full(**params)
-        roi_values.append(result["result"]["roi_percent"])
-        ltv_values.append(result["result"]["ltv"])
+            result = calc_roi_full(**params)
+            roi_values.append(result["result"]["roi_percent"])
+            ltv_values.append(result["result"]["ltv"])
 
-    return SensitivityResponse(
-        variable=req.variable,
-        values=req.values,
-        roi_values=roi_values,
-        ltv_values=ltv_values,
-    )
+        logger.info(f"灵敏度分析请求处理完成 [{request_id}]")
+        return SensitivityResponse(
+            variable=req.variable,
+            values=req.values,
+            roi_values=roi_values,
+            ltv_values=ltv_values,
+        )
+        
+    except ValidationError as e:
+        logger.warning(f"参数验证失败 [{request_id}]: {e.message}, details={e.details}")
+        return JSONResponse(status_code=400, content=format_error_response(e, request_id=request_id))
+    except Exception as e:
+        logger.error(f"灵敏度分析失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
 
 @router.post("/compare", response_model=CompareResponse)
+@monitor_performance_async(logger=logger)
 async def compare_scenarios(req: CompareRequest):
     """
     多方案对比
-
+    
     传入多个场景参数，返回对比表格
     """
-    results = []
-    for i, scen in enumerate(req.scenarios):
-        result = calc_roi_full(**scen.model_dump(exclude={"scenario"}))
-        results.append({
-            "index": i,
-            "scenario": scen.scenario,
-            "roi_percent": result["result"]["roi_percent"],
-            "ltv": result["result"]["ltv"],
-            "uv": result["intermediates"]["uv"],
-            "conversions": result["intermediates"]["conversions"],
-        })
+    request_id = generate_request_id("compare")
+    logger.info(f"收到多方案对比请求 [{request_id}]: scenarios_count={len(req.scenarios)}")
+    
+    try:
+        # 参数验证
+        if not req.scenarios or len(req.scenarios) == 0:
+            raise ValidationError(message="scenarios 参数必须非空", details={"scenarios": req.scenarios})
+        
+        logger.debug(f"参数验证通过 [{request_id}]")
+        
+        results = []
+        for i, scen in enumerate(req.scenarios):
+            result = calc_roi_full(**scen.model_dump(exclude={"scenario"}))
+            results.append({
+                "index": i,
+                "scenario": scen.scenario,
+                "roi_percent": result["result"]["roi_percent"],
+                "ltv": result["result"]["ltv"],
+                "uv": result["intermediates"]["uv"],
+                "conversions": result["intermediates"]["conversions"],
+            })
 
-    # 生成对比总结
-    best = max(results, key=lambda x: x["roi_percent"])
-    worst = min(results, key=lambda x: x["roi_percent"])
-    best_label = best['scenario'] if best['scenario'] else f"方案{best['index']}"
-    worst_label = worst['scenario'] if worst['scenario'] else f"方案{worst['index']}"
-    summary = f"最佳方案 ROI {best['roi_percent']:.2f}%（{best_label}），最低方案 ROI {worst['roi_percent']:.2f}%（{worst_label}）。"
+        # 生成对比总结
+        best = max(results, key=lambda x: x["roi_percent"])
+        worst = min(results, key=lambda x: x["roi_percent"])
+        best_label = best['scenario'] if best['scenario'] else f"方案{best['index']}"
+        worst_label = worst['scenario'] if worst['scenario'] else f"方案{worst['index']}"
+        summary = f"最佳方案 ROI {best['roi_percent']:.2f}%（{best_label}），最低方案 ROI {worst['roi_percent']:.2f}%（{worst_label}）。"
 
-    return CompareResponse(scenarios=results, summary=summary)
+        logger.info(f"多方案对比请求处理完成 [{request_id}]")
+        return CompareResponse(scenarios=results, summary=summary)
+        
+    except ValidationError as e:
+        logger.warning(f"参数验证失败 [{request_id}]: {e.message}, details={e.details}")
+        return JSONResponse(status_code=400, content=format_error_response(e, request_id=request_id))
+    except Exception as e:
+        logger.error(f"多方案对比失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
 
 @router.get("/formula")
 async def get_formula():
     """
     获取 ROI 计算公式说明（含参数定义与数据来源）
     """
-    return {
-        "formulas": [
-            {
-                "name": "UV（独立触达人数）",
-                "formula": "UV = N × U × P × β",
-                "params": {
-                    "N": "广告框数（个）[本方案设定]",
-                    "U": "每栋楼户数（户/栋）[MCP 数据库 711 广州楼盘中位数]",
-                    "P": "每户人数（人/户）[国家统计局《中国统计年鉴2024》]",
-                    "β": "接触率（%）[皓邻 5 年实测]",
+    request_id = generate_request_id("formula")
+    logger.info(f"收到公式说明请求 [{request_id}]")
+    
+    try:
+        response = {
+            "request_id": request_id,
+            "formulas": [
+                {
+                    "name": "UV（独立触达人数）",
+                    "formula": "UV = N × U × P × β",
+                    "params": {
+                        "N": "广告框数（个）[本方案设定]",
+                        "U": "每栋楼户数（户/栋）[MCP 数据库 711 广州楼盘中位数]",
+                        "P": "每户人数（人/户）[国家统计局《中国统计年鉴2024》]",
+                        "β": "接触率（%）[皓邻 5 年实测]",
+                    },
+                    "example": "UV = 5000 × 100 × 2.51 × 0.85 = 1,067,000 人",
                 },
-                "example": "UV = 5000 × 100 × 2.51 × 0.85 = 1,067,000 人",
-            },
-            {
-                "name": "PV（总曝光次数）",
-                "formula": "PV = UV × γ × T",
-                "params": {
-                    "γ": "每日接触频次（次/户/日）[单面 2.0 / 双面 3.8]",
-                    "T": "投放天数（天）",
+                {
+                    "name": "PV（总曝光次数）",
+                    "formula": "PV = UV × γ × T",
+                    "params": {
+                        "γ": "每日接触频次（次/户/日）[单面 2.0 / 双面 3.8]",
+                        "T": "投放天数（天）",
+                    },
+                    "example": "PV = 1,067,000 × 2.0 × 14 = 20,900,000 次",
                 },
-                "example": "PV = 1,067,000 × 2.0 × 14 = 20,900,000 次",
-            },
-            {
-                "name": "记忆人数",
-                "formula": "记忆人数 = UV × r",
-                "params": {
-                    "r": "记忆率（0-1）[悲观 0.15 / 中性 0.18 / 乐观 0.22]",
+                {
+                    "name": "记忆人数",
+                    "formula": "记忆人数 = UV × r",
+                    "params": {
+                        "r": "记忆率（0-1）[悲观 0.15 / 中性 0.18 / 乐观 0.22]",
+                    },
+                    "example": "记忆人数 = 1,067,000 × 0.18 = 192,060 人",
                 },
-                "example": "记忆人数 = 1,067,000 × 0.18 = 192,060 人",
-            },
-            {
-                "name": "转化人数",
-                "formula": "转化人数 = 记忆人数 × c",
-                "params": {
-                    "c": "转化率（0-1）[默认 0.02 = 2%]",
+                {
+                    "name": "转化人数",
+                    "formula": "转化人数 = 记忆人数 × c",
+                    "params": {
+                        "c": "转化率（0-1）[默认 0.02 = 2%]",
+                    },
+                    "example": "转化人数 = 192,060 × 0.02 = 3,841 人",
                 },
-                "example": "转化人数 = 192,060 × 0.02 = 3,841 人",
-            },
-            {
-                "name": "首期销售",
-                "formula": "首期销售 = 转化人数 × a",
-                "params": {
-                    "a": "客单价（元）[悲观 ¥20 / 中性 ¥22 / 乐观 ¥25]",
+                {
+                    "name": "首期销售",
+                    "formula": "首期销售 = 转化人数 × a",
+                    "params": {
+                        "a": "客单价（元）[悲观 ¥20 / 中性 ¥22 / 乐观 ¥25]",
+                    },
+                    "example": "首期销售 = 3,841 × 22 = ¥845,020",
                 },
-                "example": "首期销售 = 3,841 × 22 = ¥845,020",
-            },
-            {
-                "name": "LTV（生命周期价值）",
-                "formula": "LTV = 首期销售 × (1 + f)",
-                "params": {
-                    "f": "复购系数 [悲观 1.3 / 中性 1.4 / 乐观 1.5]",
+                {
+                    "name": "LTV（生命周期价值）",
+                    "formula": "LTV = 首期销售 × (1 + f)",
+                    "params": {
+                        "f": "复购系数 [悲观 1.3 / 中性 1.4 / 乐观 1.5]",
+                    },
+                    "example": "LTV = 845,020 × 1.4 = ¥1,183,028",
                 },
-                "example": "LTV = 845,020 × 1.4 = ¥1,183,028",
-            },
-            {
-                "name": "ROI（投资回报率）",
-                "formula": "ROI = (LTV - 成本) / 成本 × 100%",
-                "params": {
-                    "成本": "投入成本（元）",
+                {
+                    "name": "ROI（投资回报率）",
+                    "formula": "ROI = (LTV - 成本) / 成本 × 100%",
+                    "params": {
+                        "成本": "投入成本（元）",
+                    },
+                    "example": "ROI = (1,183,028 - 100,000) / 100,000 × 100% = 1,083.0%",
                 },
-                "example": "ROI = (1,183,028 - 100,000) / 100,000 × 100% = 1,083.0%",
+            ],
+            "sources": [
+                "[MCP 数据库] 711 广州楼盘中位数",
+                "[国家统计局] 《中国统计年鉴2024》",
+                "[皓邻实测] 5 年接触率数据",
+                "[CTR 报告] 户外广告记忆率行业区间",
+                "[凯度 Kantar 2024] 家庭场景口碑传播",
+            ],
+            "three_scenarios": {
+                "pessimistic": {"r": 0.15, "a": 20, "f": 1.3, "desc": "单元门单面+2周短投"},
+                "neutral": {"r": 0.18, "a": 22, "f": 1.4, "desc": "行业基线中位"},
+                "optimistic": {"r": 0.22, "a": 25, "f": 1.5, "desc": "双面+智能屏 4周"},
             },
-        ],
-        "sources": [
-            "[MCP 数据库] 711 广州楼盘中位数",
-            "[国家统计局] 《中国统计年鉴2024》",
-            "[皓邻实测] 5 年接触率数据",
-            "[CTR 报告] 户外广告记忆率行业区间",
-            "[凯度 Kantar 2024] 家庭场景口碑传播",
-        ],
-        "three_scenarios": {
-            "pessimistic": {"r": 0.15, "a": 20, "f": 1.3, "desc": "单元门单面+2周短投"},
-            "neutral": {"r": 0.18, "a": 22, "f": 1.4, "desc": "行业基线中位"},
-            "optimistic": {"r": 0.22, "a": 25, "f": 1.5, "desc": "双面+智能屏 4周"},
-        },
-    }
+        }
+        
+        logger.info(f"公式说明请求处理完成 [{request_id}]")
+        return response
+        
+    except Exception as e:
+        logger.error(f"公式说明请求失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
 
 @router.get("/benchmark")
 async def get_benchmark():
     """
     获取行业 ROI 基准对比（横评）
     """
-    return {
-        "benchmark": [
-            {"media": "社区单元门（本方案·中性）", "first_roi": "181.6%", "ltv_roi_60d": "1,367%", "source": "本方案测算"},
-            {"media": "梯媒（分众）", "first_roi": "180-250%", "ltv_roi_60d": "400-600%", "source": "行业经验"},
-            {"media": "地铁广告", "first_roi": "100-180%", "ltv_roi_60d": "200-400%", "source": "行业经验"},
-            {"media": "楼宇 LCD", "first_roi": "60-100%", "ltv_roi_60d": "120-200%", "source": "行业经验"},
-            {"media": "电视硬广", "first_roi": "40-80%", "ltv_roi_60d": "100-180%", "source": "行业经验"},
-            {"media": "线上效果广告（巨量）", "first_roi": "300-500%", "ltv_roi_60d": "800-1,200%", "source": "行业经验"},
-        ],
-        "insights": [
-            "社区单元门 LTV ROI 1,367% 与线上效果广告（巨量）800-1,200% 同属第一梯队",
-            "远高于电视/地铁/楼宇 LCD（100-600% 区间）",
-            "关键差异：社区是「高频强制触达 + 家庭决策」，转化效率天然高",
-            "CPM 仅 3-8 元，是线上广告的 1/10 到 1/30",
-        ]
-    }
+    request_id = generate_request_id("benchmark")
+    logger.info(f"收到行业基准对比请求 [{request_id}]")
+    
+    try:
+        response = {
+            "request_id": request_id,
+            "benchmark": [
+                {"media": "社区单元门（本方案·中性）", "first_roi": "181.6%", "ltv_roi_60d": "1,367%", "source": "本方案测算"},
+                {"media": "梯媒（分众）", "first_roi": "180-250%", "ltv_roi_60d": "400-600%", "source": "行业经验"},
+                {"media": "地铁广告", "first_roi": "100-180%", "ltv_roi_60d": "200-400%", "source": "行业经验"},
+                {"media": "楼宇 LCD", "first_roi": "60-100%", "ltv_roi_60d": "120-200%", "source": "行业经验"},
+                {"media": "电视硬广", "first_roi": "40-80%", "ltv_roi_60d": "100-180%", "source": "行业经验"},
+                {"media": "线上效果广告（巨量）", "first_roi": "300-500%", "ltv_roi_60d": "800-1,200%", "source": "行业经验"},
+            ],
+            "insights": [
+                "社区单元门 LTV ROI 1,367% 与线上效果广告（巨量）800-1,200% 同属第一梯队",
+                "远高于电视/地铁/楼宇 LCD（100-600% 区间）",
+                "关键差异：社区是「高频强制触达 + 家庭决策」，转化效率天然高",
+                "CPM 仅 3-8 元，是线上广告的 1/10 到 1/30",
+            ]
+        }
+        
+        logger.info(f"行业基准对比请求处理完成 [{request_id}]")
+        return response
+        
+    except Exception as e:
+        logger.error(f"行业基准对比请求失败 [{request_id}]: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content=format_error_response(e, request_id=request_id))
+
