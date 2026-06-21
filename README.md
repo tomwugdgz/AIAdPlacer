@@ -570,33 +570,54 @@ result = mcp_call(
 
 #### 🛠️ 16 个 MCP Tools（全部在线 ✅）
 
-> 服务：**pDOOH A2A MCP Server** · 工具总数：**19 个** · 健康检查：✅ OK · 数据库：`qinlin_local.db`（完整版）· 总数据量：**100,000+ 条**
+> 服务：**pDOOH A2A MCP Server** · 工具总数：**22 个** · 健康检查：✅ OK · 数据库：`qinlin_local.db`（完整版）· 总数据量：**100,000+ 条**
 
-**✅ 核心投放工具（8个）**
+**✅ 核心投放工具（7个）**
 
 | # | 工具名 | 功能 | 状态 |
 |---|--------|------|------|
 | 1 | `pdooh_query_screens` | 查询智能屏点位 | ✅ |
-| 2 | `pdooh_get_screen_audience` | 获取人群画像 | ✅ |
+| 2 | `pdooh_get_screen_audience` | 获取屏人群画像 | ✅ |
 | 3 | `pdooh_create_campaign` | 创建投放计划 | ✅ |
 | 4 | `pdooh_query_campaigns` | 查询投放计划 | ✅ |
 | 5 | `pdooh_submit_creative` | 提交创意物料 | ✅ |
 | 6 | `pdooh_query_report` | 查询效果报告 | ✅ |
 | 7 | `pdooh_compliance_check` | 合规审核 | ✅ |
-| 8 | `pdooh_audience_insight` | 人群洞察分析 | ✅ |
 
-**✅ 媒体资源查询工具（8个）**
+**✅ 点位查询工具（7个）**
 
 | # | 工具名 | 功能 | 数据来源 | 状态 |
 |---|--------|------|----------|------|
-| 9 | `pdooh_query_daocha_points` | 道闸点位查询 | 道闸点位（1,021条） | ✅ |
-| 10 | `pdooh_query_smart_frames` | 单元门点位查询 | 单元门点位（8,114条） | ✅ |
-| 11 | `pdooh_query_access_points` | 门禁点位查询 | 门禁点位（66,308条） | ✅ |
-| 12 | `pdooh_query_led_points` | LED 广告屏查询 | 待接入数据 | ✅ |
-| 13 | `pdooh_query_elevator_frames` | 电梯框架查询 | 待接入数据 | ✅ |
-| 14 | `pdooh_query_shadow_points` | 投影点位查询 | 待接入数据 | ✅ |
-| 15 | `pdooh_query_city_resources` | 城市综合资源统计 | 综合统计 | ✅ |
-| 16 | `pdooh_query_city_summary` | 城市媒体汇总 | 城市汇总 | ✅ |
+| 8 | `pdooh_query_access_points` | 门禁点位查询 | 门禁点位（66,308条） | ✅ |
+| 9 | `pdooh_query_smart_frames` | 单元门点位查询 | 单元门点位（8,114条） | ✅ |
+| 10 | `pdooh_query_daocha_points` | 道闸点位查询 | 道闸点位（1,021条） | ✅ |
+| 11 | `pdooh_query_led_points` | 商场LED点位查询 | LED点位（1,365条） | ✅ |
+| 12 | `pdooh_query_elevator_frames` | 电梯框架查询 | 预留接口 | ✅ |
+| 13 | `pdooh_query_smart_screen` | 智能屏L9查询 | 智能屏L9（9,801台） | ✅ |
+| 14 | `pdooh_query_shadow_points` | 投影点位查询 | 预留接口 | ✅ |
+
+**✅ 本地数据库工具（3个）**
+
+| # | 工具名 | 功能 | 状态 |
+|---|--------|------|------|
+| 15 | `pdooh_query_local_screens` | 本地智能屏查询 | ✅ |
+| 16 | `pdooh_query_local_stats` | 本地统计查询 | ✅ |
+| 17 | `pdooh_search_local_community` | 本地社区搜索 | ✅ |
+
+**✅ 资源统计工具（3个）**
+
+| # | 工具名 | 功能 | 状态 |
+|---|--------|------|------|
+| 18 | `pdooh_query_city_resources` | 城市资源统计 | ✅ |
+| 19 | `pdooh_query_city_summary` | 全国城市汇总 | ✅ |
+| 20 | `pdooh_query_customers` | 客户通讯录查询 | ✅ |
+
+**✅ AI能力工具（2个）**
+
+| # | 工具名 | 功能 | 状态 |
+|---|--------|------|------|
+| 21 | `pdooh_audience_insight` | 人群洞察分析 | ✅ |
+| 22 | `pdooh_calc_roi` | ROI计算 | ✅ |
 
 #### 📋 SKILL 调用示例
 
@@ -622,6 +643,102 @@ Content-Type: application/json
 ```
 
 **触发词**：`pDOOH`、`户外广告投放`、`社区屏`、`投放计划` 等
+
+---
+
+## 🤖 AI Agent 服务 (v2.0 新增)
+
+### Tom Agent (5003) - CPM 计算
+
+| 项目 | 值 |
+|------|-----|
+| 地址 | `http://47.253.159.62:5003` |
+| 版本 | v2.0 |
+| 功能 | 智能户外广告投放方案生成、CPM跟踪计算、CPM对比计算 |
+
+**API 端点**：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/health` | GET | 健康检查 |
+| `/api/plan/generate` | POST | 生成投放方案 |
+| `/api/cpm/track` | POST | CPM跟踪计算 |
+| `/api/cpm/compare` | POST | CPM对比计算 |
+
+**调用示例**：
+
+```bash
+# 生成投放方案
+curl -X POST http://47.253.159.62:5003/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{"brand":"比亚迪","budget":"30万","city":"广州"}'
+```
+
+---
+
+### ROI Agent (5004) - ROI 计算
+
+| 项目 | 值 |
+|------|-----|
+| 地址 | `http://47.253.159.62:5004` |
+| 版本 | v2.0 |
+| 功能 | 社区精准营销ROI计算（三场景：悲观/中性/乐观） |
+
+**API 端点**：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/health` | GET | 健康检查 |
+| `/api/roi` | POST | ROI三场景计算 |
+| `/api/compare` | GET | 行业ROI对比 |
+
+**调用示例**：
+
+```bash
+# ROI计算
+curl -X POST http://47.253.159.62:5004/api/roi \
+  -H "Content-Type: application/json" \
+  -d '{"frames":5000,"period_weeks":2,"plan_type":"A"}'
+```
+
+**ROI 三场景说明**：
+
+| 场景 | 记忆率 | 客单价 | ROI |
+|------|--------|--------|-----|
+| 悲观 | 15% | 20元 | 21% |
+| 中性 | 18% | 22元 | 61% |
+| 乐观 | 22% | 25元 | 173% |
+
+---
+
+### 竞品Agent (5005) - 竞品监控
+
+| 项目 | 值 |
+|------|-----|
+| 地址 | `http://47.253.159.62:5005` |
+| 版本 | v2.0 |
+| 功能 | 竞品数据库、市场情报、品牌动态 |
+
+**API 端点**：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/health` | GET | 健康检查 |
+| `/api/competitors` | GET | 竞品列表 |
+| `/api/intelligence` | GET | 市场情报 |
+| `/api/intelligence/search` | GET | 搜索情报 |
+
+**调用示例**：
+
+```bash
+# 竞品列表
+curl http://47.253.159.62:5005/api/competitors
+
+# 市场情报搜索
+curl 'http://47.253.159.62:5005/api/intelligence/search?q=麦当劳'
+```
+
+---
 
 #### 🎮 云服务器管理命令
 
