@@ -853,6 +853,7 @@
             color: var(--text-secondary);
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -1010,6 +1011,23 @@
                             <span>竞品分析</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- ROI 趋势与预算消耗对比图 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📈 近 30 天投放 ROI 趋势与预算消耗</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="chart-days-selector" onchange="updateROITrendChart()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--dark-border); background: var(--dark-card); color: var(--text-primary);">
+                                <option value="7">近 7 天</option>
+                                <option value="30" selected>近 30 天</option>
+                                <option value="60">近 60 天</option>
+                                <option value="90">近 90 天</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="updateROITrendChart()">🔄 刷新数据</button>
+                        </div>
+                    </div>
+                    <div id="roi-trend-chart" style="width: 100%; height: 420px;"></div>
                 </div>
             </div>
 
@@ -1482,6 +1500,8 @@
             switch (pageId) {
                 case 'dashboard':
                     checkAllServices();
+                    // 延迟加载图表，确保容器已渲染
+                    setTimeout(() => updateROITrendChart(), 300);
                     break;
                 case 'points':
                     loadCities('point-city');
@@ -2547,6 +2567,145 @@
             }
         }
 
+        // ==================== ROI 趋势图表 ====================
+
+        let roiTrendChart = null;
+
+        /**
+         * 获取 ROI 趋势数据
+         * @param {number} days - 天数
+         * @returns {Promise<Array>} - 趋势数据
+         */
+        async function fetchROITrendData(days = 30) {
+            try {
+                const response = await fetch(`http://47.253.159.62:5002/api/v2/dashboard/roi-trend?days=${days}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.warn('后端不可用，使用演示数据:', error.message);
+                return generateDemoROIData(days);
+            }
+        }
+
+        /**
+         * 生成演示数据（后端不可用时降级）
+         */
+        function generateDemoROIData(days) {
+            const data = [];
+            const today = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(today); d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const cost = Math.round(8000 + Math.random() * 12000);
+                const conv = Math.round(20 + Math.random() * 80);
+                const revenue = conv * 50;
+                const roi = ((revenue - cost) / cost * 100).toFixed(2);
+                data.push({ date: dateStr, cost, revenue, roi: parseFloat(roi), impressions: Math.round(10000 + Math.random() * 50000), clicks: Math.round(200 + Math.random() * 800) });
+            }
+            return data;
+        }
+
+        /**
+         * 渲染 ROI 趋势双轴图
+         */
+        function renderROITrendChart(data) {
+            const chartDom = document.getElementById('roi-trend-chart');
+            if (!chartDom) return;
+
+            if (!roiTrendChart) {
+                roiTrendChart = echarts.init(chartDom);
+            }
+
+            const dates = data.map(d => d.date.substring(5)); // 只显示 月-日
+            const fullDates = data.map(d => d.date);
+            const roiData = data.map(d => d.roi);
+            const costData = data.map(d => d.cost);
+            const revenueData = data.map(d => d.revenue);
+
+            roiTrendChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const date = fullDates[params[0].dataIndex];
+                        let html = `<strong>${date}</strong><br/>`;
+                        params.forEach(p => {
+                            const val = p.seriesName === 'ROI' ? `${p.value}%` : `¥${p.value.toLocaleString()}`;
+                            html += `${p.marker} ${p.seriesName}: <strong>${val}</strong><br/>`;
+                        });
+                        return html;
+                    }
+                },
+                legend: {
+                    data: ['ROI', '预算消耗', '收入'],
+                    textStyle: { color: '#94a3b8' },
+                    top: 0
+                },
+                grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLine: { lineStyle: { color: '#334155' } },
+                    axisLabel: { color: '#94a3b8' }
+                },
+                yAxis: [
+                    {
+                        type: 'value', name: 'ROI (%)', position: 'left',
+                        axisLine: { lineStyle: { color: '#8b5cf6' } },
+                        axisLabel: { color: '#94a3b8', formatter: '{value}%' },
+                        splitLine: { lineStyle: { color: '#1e293b' } }
+                    },
+                    {
+                        type: 'value', name: '金额 (元)', position: 'right',
+                        axisLine: { lineStyle: { color: '#06b6d4' } },
+                        axisLabel: { color: '#94a3b8', formatter: '¥{value}' },
+                        splitLine: { show: false }
+                    }
+                ],
+                series: [
+                    {
+                        name: 'ROI', type: 'line', yAxisIndex: 0, data: roiData, smooth: true,
+                        lineStyle: { width: 3, color: '#8b5cf6' },
+                        itemStyle: { color: '#8b5cf6' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(139,92,246,0.3)' },
+                                { offset: 1, color: 'rgba(139,92,246,0.05)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: '预算消耗', type: 'bar', yAxisIndex: 1, data: costData,
+                        itemStyle: { color: 'rgba(6,182,212,0.6)', borderRadius: [4, 4, 0, 0] },
+                        barWidth: '35%'
+                    },
+                    {
+                        name: '收入', type: 'bar', yAxisIndex: 1, data: revenueData,
+                        itemStyle: { color: 'rgba(16,185,129,0.6)', borderRadius: [4, 4, 0, 0] },
+                        barWidth: '35%'
+                    }
+                ]
+            });
+        }
+
+        /**
+         * 更新 ROI 趋势图表（供外部调用）
+         */
+        async function updateROITrendChart() {
+            const days = document.getElementById('chart-days-selector')?.value || 30;
+            const chartDom = document.getElementById('roi-trend-chart');
+            if (chartDom) chartDom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);">正在加载数据...</div>';
+            try {
+                const data = await fetchROITrendData(parseInt(days));
+                renderROITrendChart(data);
+            } catch (error) {
+                console.error('图表加载失败:', error);
+                if (chartDom) chartDom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--danger);">数据加载失败</div>';
+            }
+        }
+
+        // 窗口缩放时重绘
+        window.addEventListener('resize', () => { if (roiTrendChart) roiTrendChart.resize(); });
+
         // ==================== 初始化 ====================
 
         /**
@@ -2555,6 +2714,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 检测服务状态
             checkAllServices();
+
+            // 加载 Dashboard 图表（延迟 500ms 确保容器渲染完成）
+            setTimeout(() => updateROITrendChart(), 500);
 
             // 设置默认日期
             const today = new Date().toISOString().split('T')[0];
