@@ -141,3 +141,55 @@ async def conversion_funnel(
     ]
 
     return funnel
+
+
+@router.get("/dashboard/roi-trend")
+async def roi_trend(
+    campaign_id: Optional[UUID] = Query(None),
+    days: int = Query(30),
+    db: Session = Depends(get_db),
+):
+    """
+    效果归因看板 — 最近 N 天 ROI 趋势与预算消耗对比
+    返回每日的 ROI、预算消耗、 impressions、clicks、conversions
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    base_date = datetime.utcnow().date() - timedelta(days=days)
+    query = db.query(Placement).filter(Placement.date >= base_date)
+    if campaign_id:
+        query = query.filter(Placement.campaign_id == campaign_id)
+
+    placements = query.all()
+
+    # 按日期聚合
+    daily: dict = {}
+    for p in placements:
+        date_str = p.date.isoformat()
+        if date_str not in daily:
+            daily[date_str] = {
+                "date": date_str,
+                "cost": 0.0,
+                "impressions": 0,
+                "clicks": 0,
+                "conversions": 0,
+            }
+        daily[date_str]["cost"] += float(p.cost or 0)
+        daily[date_str]["impressions"] += p.impressions or 0
+        daily[date_str]["clicks"] += p.clicks or 0
+        daily[date_str]["conversions"] += p.conversions or 0
+
+    # 计算每日 ROI（假设每次转化价值 50 元）
+    CONVERSION_VALUE = 50.0
+    timeline = []
+    for date_str in sorted(daily.keys()):
+        d = daily[date_str]
+        cost = d["cost"]
+        conv_value = d["conversions"] * CONVERSION_VALUE
+        roi = ((conv_value - cost) / max(cost, 1)) * 100
+        d["roi"] = round(roi, 2)
+        d["revenue"] = round(conv_value, 2)
+        timeline.append(d)
+
+    return timeline
