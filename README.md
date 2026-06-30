@@ -844,31 +844,32 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 *实时数据概览：点位统计、曝光量、点击率、活跃计划*
 
 ### 🔍 点位查询（Point Search）
-![点位查询]<img width="2493" height="1245" alt="ScreenShot_2026-06-19_224855_063" src="https://github.com/user-attachments/assets/64b656c0-cd7d-4499-bf39-5b372b6fde48" />
+[点位查询]<img width="2493" height="1245" alt="ScreenShot_2026-06-19_224855_063" src="https://github.com/user-attachments/assets/64b656c0-cd7d-4499-bf39-5b372b6fde48" />
 
 
 *智能筛选：城市/区域/媒体类型/价格区间*
 
 ### 📅 投放计划（Ad Plans）
-![投放计划]<img width="2064" height="684" alt="ScreenShot_2026-06-19_225516_249" src="https://github.com/user-attachments/assets/4758432f-ab62-4c16-80a7-09639dcfa31c" />
+[投放计划]<img width="2064" height="684" alt="ScreenShot_2026-06-19_225516_249" src="https://github.com/user-attachments/assets/4758432f-ab62-4c16-80a7-09639dcfa31c" />
 
 
 *计划管理：创建/编辑/暂停/结束，AI 优化建议*
 
 ### 📊 ROI 计算器（ROI Calculator）
-![ROI 计算器]<img width="2481" height="1215" alt="ScreenShot_2026-06-19_224924_084" src="https://github.com/user-attachments/assets/c9e825b1-3c2a-478f-b191-0e2db126f99b" />
+[ROI 计算器]<img width="2481" height="1215" alt="ScreenShot_2026-06-19_224924_084" src="https://github.com/user-attachments/assets/c9e825b1-3c2a-478f-b191-0e2db126f99b" />
+<img width="2478" height="1323" alt="image" src="https://github.com/user-attachments/assets/dbb9072e-93d6-455e-a267-b263c5021f15" />
 
 
 *智能预算分配：UV/PV/转化率/LTV/ROI 一键计算*
 
 ### 🏆 竞品分析（Competitor Analysis）
-![竞品分析]<img width="1779" height="1026" alt="ScreenShot_2026-06-19_224941_885" src="https://github.com/user-attachments/assets/f4738cd8-ed21-44c6-9a0e-a2e4ef322a81" />
+[竞品分析]<img width="1779" height="1026" alt="ScreenShot_2026-06-19_224941_885" src="https://github.com/user-attachments/assets/f4738cd8-ed21-44c6-9a0e-a2e4ef322a81" />
 
 
 *市场洞察：份额对比/策略分析/趋势预测*
 
 ### ⚙️ 系统设置（Settings）
-![系统设置]!<img width="1725" height="1131" alt="ScreenShot_2026-06-19_225011_780" src="https://github.com/user-attachments/assets/e4aa3f52-45a2-4130-aa43-fb3a5e23a782" />
+[系统设置]!<img width="1725" height="1131" alt="ScreenShot_2026-06-19_225011_780" src="https://github.com/user-attachments/assets/e4aa3f52-45a2-4130-aa43-fb3a5e23a782" />
 
 
 
