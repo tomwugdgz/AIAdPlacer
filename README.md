@@ -836,6 +836,7 @@ curl -X POST http://47.253.159.62:8899/v1/quote \
 
 ### 🎛️ 控制面板（Dashboard）
 ![控制面板]<img width="2450" height="1113" alt="ScreenShot_2026-06-19_225619_151" src="https://github.com/user-attachments/assets/2e33a300-9cdd-4731-be22-81f88fdf54b4" />
+<img width="2549" height="1352" alt="image" src="https://github.com/user-attachments/assets/2ba4d673-5e96-4fd0-9dc7-518952d3ba87" />
 
 
 
