@@ -7,8 +7,6 @@
 
 落地路径：
 v1 → 成为Tom的私人工具（不求商业化，先验证）
-v2 → 卖给3-5个小广告主（测试付费意愿）
-v3 → 做成SaaS平台（按投放金额收费）
 
 <p align="center">
   <img src="https://img.shields.io/badge/AI-Native-red?style=flat-square" />
