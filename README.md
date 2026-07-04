@@ -57,25 +57,33 @@ AIAdPlacer 填补了这个空白：
 │                 前端展示层                        │
 │  demo.html（腾讯地图可视化）· bmn-frontend/     │
 │  bus-demo.html（公交线路热力图）                │
+│  web/index.html（AI Copilot 管理台）            │
 └──────────────────┬──────────────────────────────┘
-                     │ REST / WebSocket
+                     │ REST / WebSocket / MCP
 ┌─────────────────────────────────────────────────────┐
-│                FastAPI 后端层  (Port 5002)          │
-│  /api/v2/pdooh/*  ·  /api/v2/agents/*           │
-│  /api/v2/rag/*   ·  /api/v2/mcp/*  (A2A)      │
-│  /api/v2/bus/*    ·  /api/v2/bus-bidding/*    │
+│            多端口微服务层 (Ports 5002-5006)         │
+│                                                       │
+│  Port 5002: FastAPI 主服务                          │
+│    /api/v2/pdooh/*  ·  /api/v2/agents/*           │
+│    /api/v2/rag/*   ·  /api/v2/mcp/*  (A2A)      │
+│    /api/v2/bus/*    ·  /api/v2/dashboard/*      │
+│                                                       │
+│  Port 5003: Tom Agent (CPM 计算 + 投放方案生成)    │
+│  Port 5004: ROI Agent (三场景 ROI 计算)            │
+│  Port 5005: 竞品Agent (竞品监控 + 市场情报)        │
+│  Port 5006: BabyAGI (任务自动化编排引擎) ⭐ 新增   │
 └──────────────────┬──────────────────────────────┘
                      │
 ┌─────────────────────────────────────────────────────┐
 │                  AI 能力层                           │
 │  LangGraph Agent 编排  ·  ChromaDB 向量检索       │
-│  Ollama 本地 LLM (qwen3.5-9B)                  │
+│  BabyAGI 任务队列  ·  Ollama 本地 LLM           │
 └──────────────────┬──────────────────────────────┘
                      │
 ┌─────────────────────────────────────────────────────┐
 │                  数据层                              │
-│  PostgreSQL (pdooh + ai_adplacer)                │
-│  Redis · ChromaDB                                 │
+│  PostgreSQL (pdooh + ai_adplacer + qinlin_local)  │
+│  Redis · ChromaDB · SQLite (点位数据)             │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -767,6 +775,78 @@ curl http://47.253.159.62:5005/api/competitors
 # 市场情报搜索
 curl 'http://47.253.159.62:5005/api/intelligence/search?q=麦当劳'
 ```
+
+---
+
+### BabyAGI (5006) - 任务自动化编排引擎 ⭐ 新增
+
+| 项目 | 值 |
+|------|-----|
+| 地址 | `http://47.253.159.62:5006` |
+| 版本 | v1.0 |
+| 功能 | 任务队列管理、自动编排、多任务串联执行 |
+
+**核心能力**：
+
+- 🎯 **智能任务解析**：中文描述自动识别城市 + 功能类型
+- 🔗 **多任务串联**：自动创建并执行多个关联任务
+- 📊 **任务状态追踪**：实时查看所有任务执行状态
+- 🎮 **演示模式**：一键运行预设任务组合
+
+**支持的任务类型**：
+
+| 任务关键词 | 功能 | 示例 |
+|:-----------|:-----|:-----|
+| `查询XX单元门` | 查询单元门点位 | `查询广州单元门点位` |
+| `查询XX门禁` | 查询门禁点位 | `查询深圳门禁点位` |
+| `查询XX智能屏` | 查询智能屏点位 | `查询成都智能屏点位` |
+| `ROI计算` | ROI投资回报计算 | `ROI计算 5000框两周` |
+| `生成XX方案` | 生成投放方案 | `生成比亚迪广州50万方案` |
+
+**API 端点**：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/health` | GET | 健康检查 |
+| `/api/task/add` | POST | 添加任务（中文描述） |
+| `/api/task/execute/<task_id>` | POST | 执行任务 |
+| `/api/tasks` | GET | 查看所有任务 |
+| `/api/demo` | GET | 演示模式（自动跑3个任务） |
+
+**调用示例**：
+
+```bash
+# 添加任务
+curl -X POST http://47.253.159.62:5006/api/task/add \
+  -H "Content-Type: application/json" \
+  -d '{"description": "查询广州单元门点位"}'
+
+# 执行任务（假设返回 id=1）
+curl -X POST http://47.253.159.62:5006/api/task/execute/1
+
+# 查看所有任务
+curl http://47.253.159.62:5006/api/tasks
+
+# 演示模式（自动跑3个任务）
+curl http://47.253.159.62:5006/api/demo
+```
+
+**Python 调用示例**：
+
+```python
+import requests
+
+BASE_URL = "http://47.253.159.62:5006"
+
+# 添加并执行任务
+task_id = requests.post(f"{BASE_URL}/api/task/add",
+    json={"description": "查询广州单元门点位"}).json()["task"]["id"]
+
+result = requests.post(f"{BASE_URL}/api/task/execute/{task_id}").json()
+print(result)
+```
+
+> 📖 **完整使用指南**：[`docs/babyagi-5006-guide.md`](docs/babyagi-5006-guide.md)
 
 ---
 
