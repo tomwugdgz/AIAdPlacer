@@ -28,7 +28,7 @@ v1 → 成为Tom的私人工具（不求商业化，先验证）
 
 <p align="center">
   📋 接口解说：<a href="http://duckwolf.cn/pd.html">duckwolf.cn/pd.html</a> ｜
-  🔗 对接文档：<a href="http://47.253.159.62:5002/docs">http://47.253.159.62:5002/docs</a>
+  🔗 对接文档：<a href="http://47.253.159.62:8888/">http://47.253.159.62:8888</a>
 </p>
 
 ---
