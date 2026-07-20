@@ -24,6 +24,7 @@ from app.api.knowledge_routes import router as knowledge_router
 from app.tom_agent import router as tom_agent_router   # ← Tom Agent
 from app.roi_agent import router as roi_agent_router   # ← ROI Agent
 from app.db_api import db_api_router  # ← 数据库访问 API
+from app.smart_screen.ss_api import ss_api_router  # ← 智能屏资源子系统 API
 from app.config import settings
 
 app = FastAPI(
@@ -66,6 +67,8 @@ app.include_router(tom_agent_router)
 app.include_router(roi_agent_router)
 # 数据库访问 API — qinlin_local.db 点位数据查询
 app.include_router(db_api_router)
+# 智能屏资源子系统 API — smart_screen_l9.db（独立库，四层架构）
+app.include_router(ss_api_router)
 
 
 @app.on_event("startup")

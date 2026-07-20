@@ -279,6 +279,65 @@ cd backend
 
 ---
 
+### 🖥️ 智能屏资源子系统（Smart Screen L9）⭐ 新增
+
+基于真实数据「智能屏L9.xls」（sheet「媒体列表」，**9802 行（含表头 1 行）× 12 列**，真实媒体数据 9801 行），为 AIAdPlacer 新增独立的**智能屏资源评估子系统**，采用**四层架构（输入层 / 关联层 / 算法层 / 产出层）** 落地小区级/点位点位的 39 维价值指标。
+
+> 设计文档：[`docs/smart-screen-l9.md`](docs/smart-screen-l9.md)（含完整建表 SQL、19 算法目录、39 指标定义、ER/时序/类图）
+
+#### 四层架构
+
+| 层 | 中文 | 内容 | 物理落库 |
+|----|------|------|----------|
+| **输入层** | 4 孤岛 | 媒体列表（真实 xls）+ 小区 / 设备 / 投放 / 销售（派生占位） | `t_media_l9` `t_community` `t_device` `t_delivery` `t_sales` |
+| **关联层** | 5 纽带 | 户数/入住率/楼栋/设备/投放 JOIN 成小区级宽表 | `t_community_wide`（13 业务字段） |
+| **算法层** | 19 算法 | 人口覆盖/质量评分/效果预测/价值分析 4 大类算法注册位 | `t_algorithm`（19 行，`status='registered'`） |
+| **产出层** | 39 指标 7 大类 | A 人口覆盖(5) / B 质量评分(5) / C 效果预测(4) / D 价值分析(5) / E 画像标签(5) / F 空间价值(4) / G 行业适配(11) | `t_poi_indicators` |
+
+- **独立库隔离**：落库于 `backend/data/smart_screen_l9.db`（与 `qinlin_local.db` 物理隔离），DAO 走 `ss_dao.py`，不复用主库 `db_dao`。
+- **数据源单一事实来源**：`schema_constants.py` 集中定义 4 层 / 19 算法 / 39 指标，全模块引用，禁止硬编码。
+- **示意算法占位**：19 算法仅注册元数据；39 指标由 `indicator_formulas.py` 的启发式函数生成（注释标注「示意算法，待替换为真实模型」），GPS 缺失下空间类（F）以占位公式生成。
+
+#### 构建命令（一键生成 DB，开箱即用）
+
+```bash
+cd backend
+# 创建隔离 venv 并安装构建依赖（xlrd 必须锁 <2.0 才能读 .xls）
+python -m venv .venv_ss
+.\.venv_ss\Scripts\pip.exe install pandas xlrd==1.2.0 fastapi pydantic httpx pytest
+
+# 构建智能屏子系统库
+.\.venv_ss\Scripts\python.exe -m app.smart_screen.cli ^
+    --xls "D:/BaiduNetdiskDownload/Other/皓邻/智能屏L9.xls"
+```
+
+> 构建幂等（`DROP` + `CREATE`），重跑可重建；生成的 `smart_screen_l9.db` 已提交仓库，可开箱即用。
+
+#### API 端点（前缀 `/api/v2/smart-screen`）
+
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| GET | `/api/v2/smart-screen/tables` | 子系统表清单 + 行数 |
+| GET | `/api/v2/smart-screen/communities` | 小区级宽表（可按 省/市/区 筛选） |
+| GET | `/api/v2/smart-screen/indicators/{community_id}` | 某小区 39 指标 |
+| GET | `/api/v2/smart-screen/media` | 媒体列表（筛选 + 分页） |
+| GET | `/api/v2/smart-screen/stats` | 子系统整体统计 |
+| GET | `/api/v2/smart-screen/algorithms` | 19 算法注册表 |
+
+响应体统一 `{success, data/error, code, total?}`（与 `db_api.py` 风格一致）。
+
+#### 数据规模
+
+| 维度 | 规模 |
+|------|------|
+| 媒体点（`t_media_l9`） | **9,801** 行（xls「媒体列表」共 9,802 行，含表头 1 行） |
+| 小区（`t_community`） | 由网点名称聚合派生 |
+| 设备（`t_device`） | 由 MAC 去重派生 |
+| 指标（`t_poi_indicators`） | 小区级 39 指标全覆盖 |
+| 算法（`t_algorithm`） | 19 个 |
+
+---
+
 ## 📡 API 文档
 
 启动后访问 Swagger 自动文档：**http://127.0.0.1:5002/docs**

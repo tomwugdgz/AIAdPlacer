@@ -31,6 +31,8 @@ env/
 backend/data/*.db
 # 例外：允许提交脱敏样本库（小文件，无敏感数据）
 !backend/data/qinlin_local_sample.db
+# 例外：允许提交智能屏资源子系统库（由 xls 一键构建，开箱即用）
+!backend/data/smart_screen_l9.db
 
 # ChromaDB
 chroma/
