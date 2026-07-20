@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant CLI as cli.py
+    participant B as build_db.py
+    participant PD as pandas/xlrd
+    participant DB as smart_screen_l9.db
+    participant AC as algorithm_catalog.py
+    participant IND as indicators.py
+
+    CLI->>B: build_all(xls_path)
+    B->>PD: read_excel("智能屏L9.xls", sheet="媒体列表")
+    PD-->>B: DataFrame(9802×12)
+    B->>DB: CREATE TABLE t_media_l9 / t_community / t_device / t_delivery / t_sales
+    B->>DB: 批量 INSERT t_media_l9 + 派生 community/device/delivery/sales
+    B->>DB: CREATE + INSERT t_community_wide (JOIN 4 表)
+    B->>AC: register_algorithms(conn)
+    AC->>DB: INSERT 19 行 t_algorithm
+    B->>IND: generate_indicators(conn)
+    IND->>DB: 读取 t_community_wide
+    IND->>IND: 逐小区调 indicator_formulas (示意公式)
+    IND->>DB: CREATE + INSERT t_poi_indicators (39 列)
+    B-->>CLI: 完成 (表清单 + 行数)
+
+---
+
+sequenceDiagram
+    participant C as Client
+    participant API as ss_api.py (FastAPI)
+    participant DAO as ss_dao.py
+    participant DB as smart_screen_l9.db
+
+    C->>API: GET /api/v2/smart-screen/communities?city=中山市
+    API->>DAO: get_community_wide(filters)
+    DAO->>DB: SELECT ... FROM t_community_wide WHERE city=?
+    DB-->>DAO: rows (sqlite3.Row)
+    DAO-->>API: List[dict]
+    API-->>C: JSONResponse({success:true, data:[...], total:n})
+
+    C->>API: GET /api/v2/smart-screen/indicators/CM00001
+    API->>DAO: get_indicators(community_id)
+    DAO->>DB: SELECT * FROM t_poi_indicators WHERE community_id=?
+    DB-->>DAO: rows
+    DAO-->>API: dict
+    API-->>C: JSONResponse({success:true, data:{...39 指标}})

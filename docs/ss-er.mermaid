@@ -1,0 +1,78 @@
+erDiagram
+    t_media_l9 {
+        int id PK
+        text 网点名称
+        text MAC
+        text 终端型号
+        text community_id FK
+        text device_id FK
+        text point_id
+        text plan_id
+    }
+    t_community {
+        text community_id PK
+        text community_name
+        int  household_count
+        int  building_count
+        real occupancy_rate
+        real gps_lng
+        real gps_lat
+    }
+    t_device {
+        text device_id PK
+        text community_id FK
+        text terminal_model
+        text status
+        int  repair_count
+    }
+    t_delivery {
+        text delivery_id PK
+        text community_id FK
+        text plan_id
+        int  on_shelf_count
+    }
+    t_sales {
+        text sales_id PK
+        text community_id FK
+        text industry
+    }
+    t_community_wide {
+        text community_id PK
+        int  household_count
+        int  building_count
+        int  gate_device_count
+        int  access_device_count
+        real monthly_failure_rate
+        int  historical_launch_count
+        int  covered_industry_count
+        real ad_door_avg_price
+        real access_lightbox_price
+    }
+    t_algorithm {
+        text code PK
+        text name
+        text category
+        text source
+        text journal_level
+        text validated_city
+        real weight
+    }
+    t_poi_indicators {
+        int  id PK
+        text community_id FK
+        text point_id
+        real daily_reach
+        real quality_index
+        real value_index
+        real sci
+        real fit_auto
+    }
+
+    t_media_l9       ||--o{ t_community : "网点名称→community_id"
+    t_media_l9       ||--o{ t_device    : "MAC→device_id"
+    t_community      ||--o{ t_device    : "community_id"
+    t_community      ||--o{ t_delivery  : "community_id"
+    t_community      ||--o{ t_sales     : "community_id"
+    t_community      ||--|| t_community_wide : "community_id (1:1)"
+    t_community_wide ||--o{ t_poi_indicators : "community_id"
+    t_algorithm      ||--o{ t_poi_indicators : "code 加权"

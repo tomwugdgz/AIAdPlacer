@@ -1,0 +1,63 @@
+classDiagram
+    class SmartScreenConfig {
+        +SS_DB_PATH: Path
+        +ROW_FACTORY
+        +TABLE_INPUT: list~str~
+        +get_ss_db_connection() sqlite3.Connection
+    }
+    class SchemaConstants {
+        +FOUR_LAYERS: dict
+        +ALGORITHMS: list~dict~  %% 19 条
+        +INDICATOR_COLUMNS: list~str~  %% 39 列
+        +MEDIA_COLUMNS: list~str~  %% 12 列
+    }
+    class MediaImporter {
+        +read_xls(path) DataFrame
+        +derive_keys(df) DataFrame
+        +bulk_insert(conn, df)
+    }
+    class WideTableBuilder {
+        +build_community(conn)
+        +build_device(conn)
+        +build_delivery(conn)
+        +build_sales(conn)
+        +build_community_wide(conn)
+    }
+    class AlgorithmCatalog {
+        +register_algorithms(conn)
+    }
+    class IndicatorFormulas {
+        +daily_reach(w) Real  %% 示意算法
+        +building_depth(w) Real
+        +quality_index(w) Real
+        +value_index(w) Real
+        +sci(w) Real
+        +fit_auto(w) Real
+    }
+    class IndicatorEngine {
+        +generate_indicators(conn)
+    }
+    class SSDao {
+        +get_ss_db_connection() sqlite3.Connection
+        +list_tables() list
+        +get_community_wide(filters) dict
+        +get_indicators(community_id) dict
+        +query_media(filters) dict
+        +get_stats(table) dict
+    }
+    class SSApiRouter {
+        +GET /communities
+        +GET /indicators/{community_id}
+        +GET /media
+        +GET /algorithms
+        +GET /stats/{table}
+    }
+
+    SmartScreenConfig ..> SchemaConstants : 使用常量
+    MediaImporter ..> SchemaConstants : MEDIA_COLUMNS
+    WideTableBuilder ..> MediaImporter : 消费派生数据
+    AlgorithmCatalog ..> SchemaConstants : ALGORITHMS
+    IndicatorEngine ..> IndicatorFormulas : 调用
+    IndicatorEngine ..> SchemaConstants : INDICATOR_COLUMNS
+    SSApiRouter ..> SSDao : 调用
+    SSDao ..> SmartScreenConfig : 连接独立库
