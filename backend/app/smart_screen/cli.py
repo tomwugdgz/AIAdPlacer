@@ -16,7 +16,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from app.smart_screen.ss_config import SS_DB_PATH, JOURNAL_MODE
+from app.smart_screen.ss_config import SS_DB_PATH, JOURNAL_MODE, ROW_FACTORY
 from app.smart_screen.build_db import build_all
 from app.smart_screen.schema_constants import (
     TABLE_MEDIA, TABLE_COMMUNITY, TABLE_DEVICE, TABLE_DELIVERY,
@@ -58,6 +58,25 @@ def _print_summary() -> None:
         conn.close()
 
 
+def _recompute_indicators() -> int:
+    """重算并刷新 39 指标（幂等，一次刷新 roi_estimate + value_index 两列）。
+
+    Returns:
+        int: 刷新的 t_poi_indicators 行数（= 小区数）
+    """
+    from app.smart_screen.indicators import generate_indicators
+
+    conn = sqlite3.connect(str(SS_DB_PATH))
+    conn.row_factory = ROW_FACTORY
+    conn.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
+    try:
+        rows = generate_indicators(conn)
+        print(f"[cli] 已重算并刷新 {rows} 行小区级指标（roi_estimate + value_index）")
+        return rows
+    finally:
+        conn.close()
+
+
 def main(argv: list = None) -> int:
     """
     命令行主函数。
@@ -71,12 +90,28 @@ def main(argv: list = None) -> int:
         description="智能屏资源子系统（Smart Screen L9）建库工具",
     )
     parser.add_argument(
+        "command",
+        nargs="?",
+        default=None,
+        choices=["recompute-indicators"],
+        help="子命令：recompute-indicators 幂等重算并刷新 39 指标（含 roi_estimate/value_index）",
+    )
+    parser.add_argument(
         "--xls",
         dest="xls_path",
         default=DEFAULT_XLS,
         help="「智能屏L9.xls」路径（含 sheet「媒体列表」）",
     )
     args = parser.parse_args(argv)
+
+    # 子命令：幂等重算指标（不重建库，仅刷新 t_poi_indicators）
+    if args.command == "recompute-indicators":
+        try:
+            _recompute_indicators()
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            print(f"[cli] 重算失败: {exc}", file=sys.stderr)
+            return 1
 
     print(f"[cli] 开始构建，xls = {args.xls_path}")
     try:

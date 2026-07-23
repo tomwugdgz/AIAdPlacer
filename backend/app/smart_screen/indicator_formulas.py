@@ -17,6 +17,13 @@ from typing import Callable, Dict
 from app.smart_screen.schema_constants import INDICATOR_COLUMNS
 
 
+# ── ROI 模型行业假设常量（社区梯媒）──────────────────────────────────────────────
+# 说明：P0 阶段 CVR / AOV 采用社区梯媒统一常量，不按社区差异化（差异化留待 P1）。
+# 取值来自社区梯媒行业经验区间中值，作为可解释 ROI 模型的固定假设。
+CVR = 0.008   # 转化率：社区梯媒到店/扫码率 0.5%–2% 取中值，来源：社区梯媒行业经验区间
+AOV = 80.0    # 客单价(元)：社区周边客单价 50–120 元取中值，来源：社区周边消费行业经验区间
+
+
 def _num(value, default: float = 0.0) -> float:
     """安全取数值：None / 空 返回默认值。"""
     if value is None:
@@ -144,9 +151,18 @@ def sssc_coefficient(row: dict) -> float:
 
 
 def roi_estimate(row: dict) -> float:
-    # 示意算法，待替换为真实模型
-    c = max(cpm(row), 1.0)
-    return round(effect_predict(row) / c * 100.0, 2)
+    """真实 ROI 预估（可解释模型）。
+
+    成本 = CPM × 日触达 / 1000（等价于单屏日投放成本 access_lightbox_price）
+    收益 = 日触达 × CVR × AOV
+    真实 ROI = (收益 − 成本) / 成本
+    返回 0–100 的 ROI 指数：盈亏平衡→50，ROI≥100%→100，ROI≤−100%→0
+    """
+    reach = max(daily_reach(row), 1.0)
+    cost = max(cpm(row) * reach / 1000.0, 1e-6)   # = access_lightbox_price
+    revenue = reach * CVR * AOV
+    roi = (revenue - cost) / cost
+    return round(min(100.0, max(0.0, roi * 50.0 + 50.0)), 2)
 
 
 def value_index(row: dict) -> float:

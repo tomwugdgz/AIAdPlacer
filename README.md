@@ -336,6 +336,43 @@ python -m venv .venv_ss
 | 指标（`t_poi_indicators`） | 小区级 39 指标全覆盖 |
 | 算法（`t_algorithm`） | 19 个 |
 
+#### ROI 预估算法真实化
+
+将 `roi_estimate` 由「示意占位公式」升级为**可解释的真实 ROI 模型**（对应 `ALG_V_ROI`，算法目录 `formula_hint` 已同步为单一事实来源）。重算通过新增 CLI 子命令幂等刷新：
+
+```bash
+cd backend
+# 幂等重算 39 指标（一次刷新 roi_estimate + value_index 两列）
+.\.ss_venv\Scripts\python.exe -m app.smart_screen.cli recompute-indicators
+```
+
+- **业务定义**：衡量单个小区智能屏投放的「投入产出比」，输出 0–100 的 ROI 指数（盈亏平衡→50，越赚越接近 100，越亏越接近 0），供 `value_index` 价值指数聚合使用，辅助选点决策。
+
+- **公式（成本 / 收益 / ROI / 指数 clip）**：
+
+  ```
+  日触达 reach   = daily_reach(row)            # 复用既有函数：household_count × occupancy_rate × 2.1
+  成本   cost    = CPM × reach / 1000          # 等价于单屏日投放成本 access_lightbox_price
+  收益   revenue = reach × CVR × AOV
+  真实ROI        = (revenue − cost) / cost
+  ROI指数        = clip(revenue−cost)/cost × 50 + 50 , 0, 100)   # 盈亏平衡→50，≥100%→100，≤−100%→0
+  ```
+
+- **常量取值与来源**（P0 采用社区梯媒统一常量，不按社区差异化；差异化留待 P1）：
+
+  | 常量 | 取值 | 含义 | 来源 |
+  |------|------|------|------|
+  | `CVR` | `0.008` | 转化率（到店/扫码率） | 社区梯媒行业经验区间 0.5%–2% 取中值 |
+  | `AOV` | `80.0` | 客单价（元） | 社区周边消费行业经验区间 50–120 元取中值 |
+
+- **与 `value_index` 的关系**：`value_index = (cost_performance + roi_estimate + effect_predict) / 3`，`roi_estimate` 是其中一项；重算时 `generate_indicators` 一次性刷新两列，调用方无需改动。`roi_estimate` 签名为 `roi_estimate(row: dict) -> float`，与旧版本保持一致（仅替换函数体 + 新增模块级常量）。
+
+- **验收要点**：
+  1. `roi_estimate(row)` 返回值恒在 `[0, 100]` 闭区间，无非有限值（NaN/Inf）。
+  2. 中值用例（`reach=210, cost=80`）→ 指数 ≈ `84.0`；收益远高于成本时封顶 `100.0`；触达极小/成本极高时触底 `0.0`。
+  3. `t_poi_indicators` 全量重算后分布合理（非空、非全 0/全 100、方差合理），`value_index` 无 NaN/越界。
+  4. 纯函数单测 `tests/test_roi_estimate.py` 覆盖上述三档 + 边界 + 常量口径，可独立运行（`pytest tests/test_roi_estimate.py`）。
+
 ---
 
 ## 📡 API 文档
