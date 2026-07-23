@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant E as 工程师
+    participant F as indicator_formulas.py
+    participant C as cli.py
+    participant G as indicators.generate_indicators
+    participant DB as t_poi_indicators
+
+    E->>F: 改 roi_estimate + CVR/AOV 常量
+    E->>C: 加 recompute-indicators 子命令
+    E->>C: 运行 recompute-indicators
+    C->>G: generate_indicators(conn)
+    G->>DB: DELETE + 重算 39 指标 / 4452 行
+    DB-->>G: roi_estimate, value_index 刷新
+    E->>E: QA 跑单测 + 校验分布（非空/非全0/非全100/方差合理/无NaN越界）
