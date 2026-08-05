@@ -122,18 +122,18 @@ REM ── 检查数据库文件 ───────────────�
 echo.
 echo [6/6] 检查数据库文件...
 set DB_COUNT=0
-if exist "亲邻单元门智能框架.db" set /a DB_COUNT+=1
-if exist "亲邻门禁全国点位.db" set /a DB_COUNT+=1
-if exist "亲邻广州道闸.db" set /a DB_COUNT+=1
-if exist "亲邻商场LED.db" set /a DB_COUNT+=1
+if exist "青柠单元门智能框架.db" set /a DB_COUNT+=1
+if exist "青柠门禁全国点位.db" set /a DB_COUNT+=1
+if exist "青柠广州道闸.db" set /a DB_COUNT+=1
+if exist "青柠商场LED.db" set /a DB_COUNT+=1
 
 if %DB_COUNT% EQU 0 (
     echo [提示] 未找到媒体资源数据库文件（.db）
     echo        请将以下数据库文件放到 backend/ 目录：
-    echo          - 亲邻单元门智能框架.db
-    echo          - 亲邻门禁全国点位.db
-    echo          - 亲邻广州道闸.db
-    echo          - 亲邻商场LED.db
+    echo          - 青柠单元门智能框架.db
+    echo          - 青柠门禁全国点位.db
+    echo          - 青柠广州道闸.db
+    echo          - 青柠商场LED.db
 ) else (
     echo [成功] 找到 %DB_COUNT% 个数据库文件
 )

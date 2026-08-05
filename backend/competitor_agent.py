@@ -262,7 +262,7 @@ async def get_pricing():
         response = {
             "request_id": request_id,
             "our_pricing": MOCK_PRICING,
-            "summary": "亲邻传媒置换价在同行业中具有显著优势",
+            "summary": "青柠传媒置换价在同行业中具有显著优势",
             "note": "数据为参考数据，实际价格以合同为准",
         }
         

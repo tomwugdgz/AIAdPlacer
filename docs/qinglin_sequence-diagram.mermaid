@@ -1,0 +1,64 @@
+sequenceDiagram
+    autonumber
+    actor User as 用户(角色切换)
+    participant Demo as Demo页<br/>(qinlin_assistant_demo.html)
+    participant Router as AssistantRouter<br/>(/api/v2/assistant/chat)
+    participant Orchestrator as ToolOrchestrator
+    participant Mem as SessionMemory
+    participant Rec as IntentRecognizer
+    participant PC as PermissionChecker
+    participant Tool as CallApiSaleTool
+    participant DAO as app.db_dao<br/>(qinlin_local.db 真实库)
+    participant RBAC as RBACPolicy
+    participant LLM as LLMProvider<br/>(Ollama/OpenAI)
+
+    %% ===== 链路1：真实点位查询 =====
+    User->>Demo: 选择角色=sale，输入"查广州天河单元门点位"
+    Demo->>Router: POST /api/v2/assistant/chat<br/>{role, session_id, message}
+    Router->>Orchestrator: handle(role, session_id, message)
+    Orchestrator->>Mem: get_context(session_id) / 新建会话
+    Orchestrator->>Rec: recognize(message, memory)
+    Rec->>LLM: chat(意图识别提示 + 历史)
+    LLM-->>Rec: Intent(name=point_query, params={city:广州, district:天河})
+    Rec-->>Orchestrator: Intent
+    Orchestrator->>PC: check(role=sale, action=query_points, target=sale)
+    PC-->>Orchestrator: True (本角色内，放行)
+    Orchestrator->>Tool: run(args, ctx{role,rbac,db})
+    Tool->>DAO: query_table("单元门点位", filters={城市:广州,区域:天河})
+    DAO-->>Tool: 真实点位记录(含手机号等敏感字段)
+    Tool-->>Orchestrator: ToolResult(success, data, demo=false)
+    Orchestrator->>RBAC: mask_sensitive(data, role=sale)
+    RBAC-->>Orchestrator: 脱敏后数据(138****1234)
+    Orchestrator->>LLM: chat(system + 工具结果 + 记忆)
+    LLM-->>Orchestrator: 自然语言回复
+    Orchestrator->>Mem: add(user) / add(assistant)
+    Orchestrator-->>Router: AssistantReply(tool_calls, demo_mode=false, masked_fields)
+    Router-->>Demo: ChatResponse(success, data=AssistantReply)
+    Demo-->>User: 渲染角色面板 + 脱敏点位 + 工具调用记录
+
+    %% ===== 越权拦截示例 =====
+    User->>Demo: engineer 输入"查销售客户通讯录"
+    Demo->>Router: POST /api/v2/assistant/chat
+    Router->>Orchestrator: handle(role=engineer, ...)
+    Orchestrator->>PC: check(role=engineer, action=query_clients, target=sale)
+    PC-->>Orchestrator: False (跨角色越权)
+    Orchestrator-->>Router: AssistantReply(demo_mode=false, content="无权限访问销售客户数据")
+    Router-->>Demo: ChatResponse
+    Demo-->>User: 提示越权被拦截
+
+    %% ===== 链路2：文档生成 + 模拟操作 =====
+    User->>Demo: sale 输入"生成天河点位报备 docx"
+    Demo->>Router: POST /api/v2/assistant/chat
+    Router->>Orchestrator: handle(role=sale, message)
+    Orchestrator->>Rec: recognize → Intent(name=doc_generate, params={type:docx, topic:报备})
+    Orchestrator->>Tool: DocWorkflow.execute(通过 SkillRegistry 取 DocxSkill)
+    Tool->>Tool: DocxSkill.generate(args) → 真实文件 backend/data/generated/报备_*.docx
+    Tool-->>Orchestrator: WorkflowResult(success, demo=false, 文件已生成)
+    Note over Orchestrator: 若触发 报备/锁点 类意图
+    Orchestrator->>Tool: SaleWorkflow.execute(args)
+    Tool-->>Orchestrator: WorkflowResult(demo=true, audit_log=[...], 未写库)
+    Orchestrator->>LLM: chat(汇总工具结果 + 演示态说明)
+    LLM-->>Orchestrator: 自然语言回复(含"演示态"标识)
+    Orchestrator-->>Router: AssistantReply(demo_mode=true, tool_calls=[真实文档, 模拟报备])
+    Router-->>Demo: ChatResponse
+    Demo-->>User: 展示真实 docx 下载 + "演示态，未真实写库"提示

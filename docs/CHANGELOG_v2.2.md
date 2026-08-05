@@ -28,9 +28,9 @@
 **Tom Agent 人设** (System Prompt):
 - 专业的户外广告投放专家，深入的市场洞察
 - 主推媒体：单元门灯箱（30%~48%）> 广告门 > 开门App
-- 熟悉亲邻传媒资源（70,000+ 小区，3 亿城镇家庭）
+- 熟悉青柠传媒资源（70,000+ 小区，3 亿城镇家庭）
 - 联系方式统一：17665188615
-- 竞品话术：将"华语传媒"改为"亲邻传媒"
+- 竞品话术：将"华语传媒"改为"青柠传媒"
 
 **API 端点**:
 
@@ -53,11 +53,11 @@
 
 | # | 工具名称 | 功能 | 数据库 |
 |---|----------|------|--------|
-| 1 | `pdooh_query_access_points` | 查询门禁点位 | 亲邻门禁全国点位.db |
+| 1 | `pdooh_query_access_points` | 查询门禁点位 | 青柠门禁全国点位.db |
 | 2 | `pdooh_query_screens` | 查询智能屏 | 智能屏2025数据.db |
-| 3 | `pdooh_query_gates` | 查询道闸 | 亲邻广州道闸.db |
-| 4 | `pdooh_query_led` | 查询商场LED | 亲邻商场LED.db |
-| 5 | `pdooh_query_unit_doors` | 查询单元门 | 亲邻单元门智能框架.db |
+| 3 | `pdooh_query_gates` | 查询道闸 | 青柠广州道闸.db |
+| 4 | `pdooh_query_led` | 查询商场LED | 青柠商场LED.db |
+| 5 | `pdooh_query_unit_doors` | 查询单元门 | 青柠单元门智能框架.db |
 | 6 | `pdooh_city_report` | 城市资源统计 | 多库联合 |
 | 7 | `pdooh_create_plan` | 创建投放计划 | - |
 | 8 | `pdooh_update_plan` | 更新投放计划 | - |

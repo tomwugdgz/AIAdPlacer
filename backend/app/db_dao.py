@@ -18,7 +18,21 @@ from pathlib import Path
 
 # ── 数据库路径 ────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "data" / "qinlin_local.db"
+
+# 主库路径优先级：
+#   1. config.QINGLIN_DB_PATH（支持环境变量 QINGLIN_DB_PATH 覆盖）
+#   2. backend/data/qinlin_local.db（真实主库，历史资产，文件名不改）
+# 若 config 不可用（极端情况下的裸脚本调用），回退到默认路径，保证模块仍可 import。
+try:
+    from app.config import settings as _settings
+
+    DB_PATH = Path(_settings.QINGLIN_DB_PATH)
+except Exception:  # noqa: BLE001 — 配置缺失不应导致 DAO 不可用
+    DB_PATH = BASE_DIR / "data" / "qinlin_local.db"
+
+# 二级兜底：脱敏样本库（不再指向真实主库，避免与 DB_PATH 指向同一文件造成语义混乱）
+LEGACY_DB_PATH = BASE_DIR / "data" / "qinlin_local_sample.db"
+# 脱敏样本库，最后兜底（可提交到 Git）
 SAMPLE_DB_PATH = BASE_DIR / "data" / "qinlin_local_sample.db"
 
 # ── 日志 ────────────────────────────────────────────────────────────────────────
@@ -42,35 +56,39 @@ type_to_table = {
 
 def get_db_connection() -> sqlite3.Connection:
     """
-    获取数据库连接（自动兜底到样本库）。
+    获取数据库连接（自动兜底）。
     
     优先级：
-    1. qinlin_local.db（完整数据库，含敏感数据）
-    2. qinlin_local_sample.db（样本数据库，已脱敏，可提交到 Git）
+    1. DB_PATH —— config.QINGLIN_DB_PATH 指定的库，默认 qinlin_local.db（真实主库，含敏感字段）
+    2. LEGACY_DB_PATH —— qinlin_local.db（历史命名，兼容既有部署）
+    3. SAMPLE_DB_PATH —— qinlin_local_sample.db（样本数据库，已脱敏，可提交到 Git）
     
     Returns:
         sqlite3.Connection: SQLite 数据库连接对象
         
     Raises:
-        FileNotFoundError: 两个数据库文件都不存在时抛出
+        FileNotFoundError: 三个数据库文件都不存在时抛出
     """
-    if DB_PATH.exists():
-        conn = sqlite3.connect(str(DB_PATH))
+    for candidate, note in (
+        (DB_PATH, ""),
+        (LEGACY_DB_PATH, "主库不存在，回退到历史命名库"),
+        (SAMPLE_DB_PATH, "完整数据库不存在，使用样本库"),
+    ):
+        if not candidate.exists():
+            continue
+        if note:
+            logger.warning(f"{note}: {candidate}")
+        conn = sqlite3.connect(str(candidate))
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
-    elif SAMPLE_DB_PATH.exists():
-        logger.warning(f"完整数据库不存在，使用样本库: {SAMPLE_DB_PATH}")
-        conn = sqlite3.connect(str(SAMPLE_DB_PATH))
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
-    else:
-        raise FileNotFoundError(
-            f"数据库文件不存在！\n"
-            f"请放置完整数据库到：{DB_PATH}\n"
-            f"或放置样本数据库到：{SAMPLE_DB_PATH}"
-        )
+
+    raise FileNotFoundError(
+        f"数据库文件不存在！\n"
+        f"请放置完整数据库到：{DB_PATH}\n"
+        f"或放置历史命名库到：{LEGACY_DB_PATH}\n"
+        f"或放置样本数据库到：{SAMPLE_DB_PATH}"
+    )
 
 
 # ── 1. 获取所有表名和记录数 ───────────────────────────────────────────────────

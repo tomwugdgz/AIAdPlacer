@@ -82,6 +82,18 @@ openpyxl>=3.1.0
 # 仅 build 阶段读 .xls 需要：xlrd>=2.0 已移除 xls 支持，必须锁 <2.0
 xlrd==1.2.0
 
+# ── 青柠智能对话助手（qinglin_assistant 增量模块）─────────
+# 文档生成技能（真实链路）：Word / PowerPoint / PDF
+python-docx>=1.1.0
+python-pptx>=0.6.23
+reportlab>=4.0.0
+
+# ── 文档生成（青柠助手 skills 模块）─────────────────────────
+# Excel 复用上面已声明的 openpyxl，勿重复添加
+python-docx>=1.1.0
+python-pptx>=0.6.23
+reportlab>=4.0.0
+
 # ── 异步任务队列（Celery，可选）────────────────────────────
 # celery>=5.3.0
 # 如果使用 Celery + Redis

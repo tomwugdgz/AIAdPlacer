@@ -1,5 +1,13 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+# backend/app/config.py -> backend/app -> backend
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_DEFAULT_QINGLIN_DB = str(_BACKEND_DIR / "data" / "qinlin_local.db")
+_DEFAULT_QINGLIN_MEMORY_DB = str(_BACKEND_DIR / "data" / "qinglin_memory.db")
+
 
 class Settings(BaseSettings):
     # 数据库配置
@@ -21,6 +29,21 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
     OLLAMA_MODEL: str = "modelscope.cn/bge-m3:latest"
     LLM_ENABLED: bool = True
+
+    # ── 青柠智能助手（qinglin_assistant 增量模块）─────────────────
+    # 业务库：真实点位/客户数据，查询类走真实链路
+    QINGLIN_DB_PATH: str = _DEFAULT_QINGLIN_DB
+    # 会话记忆持久化库（按 session_id 隔离）
+    QINGLIN_MEMORY_DB_PATH: str = _DEFAULT_QINGLIN_MEMORY_DB
+
+    # 聊天模型。注意：OLLAMA_MODEL 可能被配置为 bge-m3 等 embedding 模型，
+    # 不能用于对话，因此青柠助手使用独立的聊天模型字段。
+    QINGLIN_CHAT_MODEL: str = "qwen3.5-9b"
+
+    # OpenAI 协议兼容网关（OpenAI / DashScope / Claude 网关等）
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
     
     # 应用配置
     APP_NAME: str = "AI智能投放系统"

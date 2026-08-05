@@ -19,7 +19,7 @@ from app.agents.smart_schedule import schedule_agent
 from app.agents.dynamic_creative import creative_agent
 from app.agents.attribution import attribution_agent
 from app.services.scheduling_optimizer import SchedulingOptimizer
-from app.services.competitor_monitor import CompetitorMonitor
+from app.services.competitor_monitor import CompetitorMonitorService as CompetitorMonitor
 from app.services.llm_client import llm_client
 
 logger = logging.getLogger(__name__)

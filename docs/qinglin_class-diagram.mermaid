@@ -1,0 +1,218 @@
+classDiagram
+    %% ===== 基础设施层 =====
+    class Role {
+        <<enum>>
+        SALE
+        MEDIA
+        ENGINEER
+        DEVELOPER
+    }
+
+    class RBACPolicy {
+        +Dict~Role, Set~str~~ role_permissions
+        +can_access(role: Role, resource: str) bool
+        +mask_sensitive(data: dict, role: Role) dict
+    }
+
+    class PermissionChecker {
+        -RBACPolicy policy
+        +check(role: Role, action: str, target_role: Role) bool
+    }
+
+    class Message {
+        +str role
+        +str content
+        +float ts
+    }
+
+    class SessionMemory {
+        -dict~str, list~ history
+        +add(role: str, content: str)
+        +get_context() list~Message~
+        +clear(session_id: str)
+    }
+
+    %% ===== LLM 层 =====
+    class LLMProvider {
+        <<abstract>>
+        +chat(prompt, system_prompt, temperature) str
+        +generate_json(prompt, system_prompt) dict
+    }
+    class OllamaProvider {
+        -OllamaClient client
+    }
+    class OpenAICompatibleProvider {
+        -AsyncOpenAI client
+    }
+    class LLMFactory {
+        +create(provider: str, cfg) LLMProvider
+    }
+    LLMProvider <|-- OllamaProvider
+    LLMProvider <|-- OpenAICompatibleProvider
+    LLMFactory ..> LLMProvider : creates
+
+    %% ===== 意图层 =====
+    class Intent {
+        +str name
+        +float confidence
+        +dict params
+    }
+    class IntentRecognizer {
+        -LLMProvider llm
+        +recognize(message: str, memory: SessionMemory) Intent
+    }
+
+    %% ===== 工具层 =====
+    class ToolContext {
+        +Role role
+        +str session_id
+        +RBACPolicy rbac
+        +object db
+    }
+    class ToolResult {
+        +bool success
+        +dict data
+        +bool demo
+        +str message
+    }
+    class Tool {
+        <<abstract>>
+        +str name
+        +list supported_roles
+        +str description
+        +bool requires_rbac
+        +run(args: dict, ctx: ToolContext) ToolResult
+    }
+    class CallApiSaleTool
+    class CallApiMediaTool
+    class CallApiEngineerTool
+    class CallApiDeveloperTool
+    class WebSearchTool
+    class MapGeocodeTool
+    class MapSearchPoiTool
+    class CheckPermissionTool
+    class GetUserRoleSkillTool
+    Tool <|-- CallApiSaleTool
+    Tool <|-- CallApiMediaTool
+    Tool <|-- CallApiEngineerTool
+    Tool <|-- CallApiDeveloperTool
+    Tool <|-- WebSearchTool
+    Tool <|-- MapGeocodeTool
+    Tool <|-- MapSearchPoiTool
+    Tool <|-- CheckPermissionTool
+    Tool <|-- GetUserRoleSkillTool
+    Tool ..> ToolContext : uses
+    Tool ..> ToolResult : returns
+
+    %% ===== 技能层 =====
+    class Skill {
+        <<abstract>>
+        +str name
+        +generate(args: dict) str
+    }
+    class DocxSkill
+    class XlsxSkill
+    class PptxSkill
+    class PdfSkill
+    class TosFileAccessSkill
+    class SkillRegistry {
+        +register(s: Skill)
+        +get(name: str) Skill
+        +list() list
+    }
+    Skill <|-- DocxSkill
+    Skill <|-- XlsxSkill
+    Skill <|-- PptxSkill
+    Skill <|-- PdfSkill
+    Skill <|-- TosFileAccessSkill
+    SkillRegistry o-- Skill
+
+    %% ===== 沙箱 =====
+    class BashSandbox {
+        -list blacklist
+        +run(cmd: str, timeout: int) SandboxResult
+    }
+    class SandboxResult {
+        +bool success
+        +str stdout
+        +str stderr
+        +int exit_code
+    }
+    BashSandbox ..> SandboxResult : returns
+
+    %% ===== 工作流层 =====
+    class WorkflowResult {
+        +bool success
+        +dict data
+        +bool demo
+        +list audit_log
+    }
+    class Workflow {
+        <<abstract>>
+        +str name
+        +bool demo
+        +execute(args: dict, ctx: ToolContext) WorkflowResult
+    }
+    class SaleWorkflow
+    class MediaWorkflow
+    class PointWorkflow
+    class DocWorkflow
+    Workflow <|-- SaleWorkflow
+    Workflow <|-- MediaWorkflow
+    Workflow <|-- PointWorkflow
+    Workflow <|-- DocWorkflow
+    Workflow ..> ToolContext : uses
+    Workflow ..> WorkflowResult : returns
+
+    %% ===== 编排层 =====
+    class ToolOrchestrator {
+        -LLMProvider llm
+        -dict tools
+        -RBACPolicy rbac
+        -SkillRegistry skills
+        -BashSandbox sandbox
+        -IntentRecognizer recognizer
+        +handle(role: Role, session_id: str, message: str) AssistantReply
+    }
+    class AssistantReply {
+        +str session_id
+        +str role
+        +str content
+        +list~ToolCallRecord~ tool_calls
+        +bool demo_mode
+        +list masked_fields
+    }
+    class ToolCallRecord {
+        +str tool
+        +dict args
+        +ToolResult result
+        +bool demo
+    }
+    ToolOrchestrator o-- LLMProvider
+    ToolOrchestrator o-- Tool
+    ToolOrchestrator o-- SkillRegistry
+    ToolOrchestrator o-- BashSandbox
+    ToolOrchestrator o-- RBACPolicy
+    ToolOrchestrator o-- SessionMemory
+    ToolOrchestrator o-- IntentRecognizer
+    ToolOrchestrator ..> AssistantReply : builds
+    AssistantReply *-- ToolCallRecord
+
+    %% ===== API 层 =====
+    class ChatRequest {
+        +str role
+        +str session_id
+        +str message
+    }
+    class ChatResponse {
+        +bool success
+        +str request_id
+        +AssistantReply data
+        +dict error
+    }
+    class AssistantRouter {
+        +POST /api/v2/assistant/chat
+    }
+    AssistantRouter ..> ToolOrchestrator : calls
+    AssistantRouter ..> ChatRequest : accepts
+    AssistantRouter ..> ChatResponse : returns

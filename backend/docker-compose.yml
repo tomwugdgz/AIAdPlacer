@@ -44,10 +44,10 @@ services:
     volumes:
       - ./data:/app/data          # 知识库、SQLite 数据库
       - ./logs:/app/logs          # 日志文件
-      - ./亲邻单元门智能框架.db:/app/亲邻单元门智能框架.db
-      - ./亲邻门禁全国点位.db:/app/亲邻门禁全国点位.db
-      - ./亲邻广州道闸.db:/app/亲邻广州道闸.db
-      - ./亲邻商场LED.db:/app/亲邻商场LED.db
+      - ./青柠单元门智能框架.db:/app/青柠单元门智能框架.db
+      - ./青柠门禁全国点位.db:/app/青柠门禁全国点位.db
+      - ./青柠广州道闸.db:/app/青柠广州道闸.db
+      - ./青柠商场LED.db:/app/青柠商场LED.db
     
     # 依赖服务（如有）
     depends_on: []

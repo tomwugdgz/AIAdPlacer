@@ -25,6 +25,7 @@ from app.tom_agent import router as tom_agent_router   # ← Tom Agent
 from app.roi_agent import router as roi_agent_router   # ← ROI Agent
 from app.db_api import db_api_router  # ← 数据库访问 API
 from app.smart_screen.ss_api import ss_api_router  # ← 智能屏资源子系统 API
+from app.qinglin_assistant.api import router as qinglin_assistant_router  # ← 青柠智能助手
 from app.config import settings
 
 app = FastAPI(
@@ -69,6 +70,8 @@ app.include_router(roi_agent_router)
 app.include_router(db_api_router)
 # 智能屏资源子系统 API — smart_screen_l9.db（独立库，四层架构）
 app.include_router(ss_api_router)
+# 青柠智能助手（增量模块）— LLM 抽象层 + RBAC + 业务工具，挂载于 /api/v2/assistant
+app.include_router(qinglin_assistant_router, prefix="/api/v2/assistant", tags=["青柠助手"])
 
 
 @app.on_event("startup")
@@ -90,3 +93,6 @@ async def startup():
     print(f"📊 CPM 追踪/对比: http://127.0.0.1:5002/api/v2/tom/cpm/track")
     print(f"📈 ROI Agent (投资回报): http://127.0.0.1:5002/api/v2/roi/calculate")
     print(f"📊 ROI 三场景快查: http://127.0.0.1:5002/api/v2/roi/three-scenarios")
+    print(f"🍋 青柠助手健康检查: http://127.0.0.1:5002/api/v2/assistant/health")
+    print(f"🍋 青柠助手角色列表: http://127.0.0.1:5002/api/v2/assistant/roles")
+    print(f"🍋 青柠助手对话: http://127.0.0.1:5002/api/v2/assistant/chat")

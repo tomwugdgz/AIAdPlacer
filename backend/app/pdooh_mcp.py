@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 DB_PATHS = {
-    "smart_frames": str(BASE_DIR / "亲邻单元门智能框架.db"),
-    "access_points": str(BASE_DIR / "亲邻门禁全国点位.db"),
-    "daocha": str(BASE_DIR / "亲邻广州道闸.db"),
-    "led": str(BASE_DIR / "亲邻商场LED.db"),
+    "smart_frames": str(BASE_DIR / "青柠单元门智能框架.db"),
+    "access_points": str(BASE_DIR / "青柠门禁全国点位.db"),
+    "daocha": str(BASE_DIR / "青柠广州道闸.db"),
+    "led": str(BASE_DIR / "青柠商场LED.db"),
 }
 
 
@@ -900,7 +900,7 @@ async def health():
         "tools_count": len(PDOOH_MCP_TOOLS),
         "mcp_endpoint": "/api/v2/mcp/pdooh/tools/call",
         "skill_endpoint": "/api/v2/mcp/pdooh/skill.yaml",
-        "reference": "亲邻科技5V数据模型",
+        "reference": "青柠5V数据模型",
     }
 
 
@@ -919,7 +919,7 @@ triggers:
   - "pDOOH"
   - "户外广告投放"
   - "社区屏"
-  - "亲邻科技"
+  - "青柠"
   - "程序化户外"
   - "audience insight"
   - "投放计划"
