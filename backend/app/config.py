@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     
     # Redis配置
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
+
+    # ── 青柠 Booking 真实锁位模块（P0 增量）─────────────────
+    # 层② Redis 分布式锁超时（毫秒）：与 DB 事务时长匹配（设计 §16 待确认#5），默认 5s
+    BOOKING_LOCK_PX_MS: int = 5000
+    # 到期释放定时扫描间隔（秒）：默认 60s（设计 §10 P0-6）
+    BOOKING_RELEASE_CRON_SECONDS: int = 60
     
     # 腾讯地图API
     TENCENT_MAP_KEY: str = "7HKBZ-HQBEM-XS56X-6DBAT-ITXUZ-IDFNG"

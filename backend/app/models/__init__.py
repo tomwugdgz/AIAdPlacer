@@ -38,6 +38,17 @@ class MediaResource(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # ── 青柠 Booking 派生字段（由 ETL 写入，设计 §5/§7）────────
+    # 存量表结构零改动，仅追加列；DDL 由 Alembic 迁移 0001 补全。
+    level = Column(String(4))            # A++/A+/A/B/C（派生）
+    city = Column(String(64))
+    area = Column(String(64))
+    project = Column(String(128))
+    point_no = Column(String(64))
+    source_table = Column(String(64))    # 来源 SQLite 表名
+    dedup_key = Column(String(128))      # 去重键
+    media_type_code = Column(String(32))  # 媒体类型编码
+
 
 class Campaign(Base):
     __tablename__ = "campaigns"
@@ -102,6 +113,18 @@ def init_db():
     """初始化数据库表"""
     Base.metadata.create_all(bind=engine)
     print("数据库表创建完成！")
+
+
+# ── 青柠 Booking 模型纳入 Base 元数据（设计 §2）──────────────
+# 必须在 Base / MediaResource 等定义之后导入，避免循环依赖。
+from app.models.booking import (  # noqa: E402,F401
+    Booking,
+    BookingStatus,
+    InstallStatus,
+    LockTier,
+    LockTierConfig,
+    MediaLevelRule,
+)
 
 
 if __name__ == "__main__":

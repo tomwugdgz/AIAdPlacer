@@ -11,7 +11,8 @@
 关键约束：
 - RBAC 越权直接拦截，绝不访问底层 DB。
 - 知识库查询走真实 DB，数字可核对（即使 LLM 不可用也返回 200 + 真实数字）。
-- 报备 / 锁点 / 导点返回体带 ``demo: true`` 且文案标注「演示态」。
+- 报备（submit_report）返回体带 ``demo: true``（演示态，P0 不接 CRM）；锁点（lock_point）/
+  导点（export_point）已升级为**真实事务**，返回真实 ``booking_no`` 且 ``demo: false``。
 - 纯对话（general）依赖 LLM：若 LLM 后端（Ollama）不可用，**明确返回 503 + 清晰错误**，
   绝不静默 mock（team-lead 验收硬约束）。
 """
@@ -55,7 +56,12 @@ from app.qinglin_assistant.tools.aux_tools import MapGeocodeTool, MapPoiTool
 from app.qinglin_assistant.tools.base import ToolContext
 from app.qinglin_assistant.tools.kb_tools import KnowledgeBaseTool
 from app.qinglin_assistant.workflows.point_doc import generate_document_orchestration
-from app.qinglin_assistant.workflows.sale_media import export_point, lock_point, submit_report
+from app.qinglin_assistant.workflows.sale_media import (
+    export_point,
+    lock_point,
+    resolve_media_resource_id,
+    submit_report,
+)
 
 logger = setup_logging("qinglin_api")
 
@@ -273,11 +279,15 @@ async def chat(req: ChatRequest, request: Request):
             tool_calls.append(res.to_dict())
 
         elif action == ACTION_POINT_LOCK:
+            # 接入点（设计 §9）：先由 params 解析目标 media_resource_id，转交真实 booking_service
+            params["media_resource_id"] = await resolve_media_resource_id(params)
             res = await lock_point(role, req.session_id, params)
             content = res.content
             tool_calls.append(res.to_dict())
 
         elif action == ACTION_POINT_EXPORT:
+            # 接入点（设计 §9）：解析后导点（真实 booking 清单）
+            params["media_resource_id"] = await resolve_media_resource_id(params)
             res = await export_point(role, req.session_id, params)
             content = res.content
             tool_calls.append(res.to_dict())

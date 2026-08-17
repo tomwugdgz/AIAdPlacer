@@ -26,6 +26,10 @@ from app.roi_agent import router as roi_agent_router   # ← ROI Agent
 from app.db_api import db_api_router  # ← 数据库访问 API
 from app.smart_screen.ss_api import ss_api_router  # ← 智能屏资源子系统 API
 from app.qinglin_assistant.api import router as qinglin_assistant_router  # ← 青柠智能助手
+from app.routers.bookings import router as bookings_router  # ← 青柠 Booking 真实锁位
+from app.core.exceptions import QinglinError
+from app.tasks.scheduler import ensure_release_scheduler_started
+from fastapi.responses import JSONResponse
 from app.config import settings
 
 app = FastAPI(
@@ -34,6 +38,12 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+
+@app.exception_handler(QinglinError)
+async def _qinglin_error_handler(request, exc: QinglinError):
+    """青柠业务异常 → 统一 HTTP 响应（设计 §15 错误码映射）。"""
+    return JSONResponse(status_code=exc.http_status, content=exc.to_dict())
 
 # CORS 配置
 app.add_middleware(
@@ -73,11 +83,20 @@ app.include_router(ss_api_router)
 # 青柠智能助手（增量模块）— LLM 抽象层 + RBAC + 业务工具，挂载于 /api/v2/assistant
 app.include_router(qinglin_assistant_router, prefix="/api/v2/assistant", tags=["青柠助手"])
 
+# 青柠 Booking 真实锁位模块（P0）— 挂载于 /api/v2/bookings
+app.include_router(bookings_router, prefix="/api/v2/bookings", tags=["青柠 Booking 真实锁位"])
+
 
 @app.on_event("startup")
 async def startup():
     from app.models import init_db
     init_db()
+    # 启动青柠 Booking 到期释放调度（APScheduler，回退 asyncio 循环）
+    try:
+        scheme = await ensure_release_scheduler_started()
+        print(f"⏰ 青柠 Booking 到期释放调度已启动（{scheme}）")
+    except Exception as e:  # noqa: BLE001
+        print(f"⚠️ 青柠 Booking 到期释放调度启动失败: {e}")
     print(f"🚀 {settings.APP_NAME} v2.0.0 CPS 已启动")
     print(f"📍 API文档: http://127.0.0.1:5002/docs")
     print(f"🤖 Agent API: http://127.0.0.1:5002/api/v2/agents/execute")

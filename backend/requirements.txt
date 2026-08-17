@@ -28,10 +28,10 @@ python-dotenv>=1.0.0
 # SQLite: 无需额外配置
 # PostgreSQL: 需要安装 psycopg2-binary
 SQLAlchemy>=2.0.0
-# PostgreSQL 驱动（可选，使用 PostgreSQL 时取消注释）
-# psycopg2-binary>=2.9.9
-# 异步 PostgreSQL 驱动（可选）
-# asyncpg>=0.29.0
+# PostgreSQL 驱动（使用 PostgreSQL 时启用）
+psycopg2-binary>=2.9.9
+# 异步 PostgreSQL 驱动（Booking 模块并行异步引擎）
+asyncpg>=0.29.0
 
 # ── Redis（可选，用于缓存和异步任务）─────────────────────────
 # 如果不用 Redis，可以注释掉这两行
@@ -108,9 +108,15 @@ python-dateutil>=2.8.0
 tqdm>=4.66.0
 
 # ── 测试（可选，开发时使用）────────────────────────────────
-# pytest>=8.0.0
-# pytest-asyncio>=0.23.0
-# httpx>=0.25.0  # 已包含在 HTTP 客户端中
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.25.0  # 已包含在 HTTP 客户端中
+
+# ── 迁移（Alembic，Booking 模块 DDL）──────────────────────
+alembic>=1.13.0
+
+# ── 定时任务（APScheduler，到期释放 cron）─────────────────
+APScheduler>=3.10.0
 
 # ═══════════════════════════════════════════════════════════════
 # 可选依赖（按需安装）
