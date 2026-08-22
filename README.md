@@ -401,6 +401,72 @@ cd backend
 
 ---
 
+### 🔒 青柠 Booking 真实锁位模块（P0）⭐ 新增
+
+面向社区媒体「真实锁位 / 预占 / 排期」的库存交易闭环，已上线 `/api/v2/bookings`。品牌统一「青柠」、代码标识 `qinglin`，磁盘库沿用 `qinlin_local.db`（表名保持原样不动）。
+
+**四层超卖防护（库存交易最后防线）**
+
+| 层 | 防护 | 实现 |
+|----|------|------|
+| ① 接口预检 | 下单前占位可用性校验 | `booking_service.check_availability` |
+| ② 分布式锁 | Redis `SET NX PX` 防并发抢占同一点位 | `redis` 锁（带自动过期） |
+| ③ 悲观锁 | 事务内 `SELECT ... FOR UPDATE ORDER BY id` 串行化写入 | `async SQLAlchemy` |
+| ④ 排他约束 | 绕过应用直插重叠 → 触发 `23P01` | DB 层 `EXCLUDE USING gist` 硬约束 |
+
+**核心模型**（`backend/app/models/booking.py`）：`Booking`（UUID 主键 · `booking_no` 唯一 · 7 态状态机 · `idempotency_key` 幂等）、`LockTierConfig`（五档锁位参数 A++ / A+ / A / B / C）、`MediaLevelRule`（媒体类型 × 城市 → 锁位级别，可配置派生，**无 level 列**）。
+
+**端点**（前缀 `/api/v2/bookings`，注意带尾斜杠）：
+
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| POST | `/api/v2/bookings/precheck/` | 锁位预检（可用性 + 冲突） |
+| POST | `/api/v2/bookings/` | 创建锁位（四层防护 + 幂等） |
+| POST | `/api/v2/bookings/{no}/extend/` | 延长锁位 |
+| POST | `/api/v2/bookings/{no}/release/` | 释放锁位 |
+| POST | `/api/v2/bookings/{no}/cancel/` | 取消锁位 |
+| POST | `/api/v2/bookings/{no}/install/` | 上刊确认 |
+| GET | `/api/v2/bookings/` | 锁位列表（筛选） |
+| GET | `/api/v2/bookings/{no}/` | 锁位详情 |
+| GET | `/api/v2/bookings/point/{id}/timeline/` | 单点位锁位时间线 |
+
+**锁位到期释放**：`backend/app/tasks/booking_release.py` 的 `release_expired_bookings()` 扫描 `LOCKED` 且 `expire_at` 过期记录 → 置 `EXPIRED` + 释放 Redis 锁；`app/main.py` 启动时拉起调度器。
+
+**验收**：并发测试 `backend/tests/test_booking_ct.py`（并发同点位仅 1 成功 / 到期释放 / 幂等 / 直插 23P01 / 无脏数据 / 多点位全成功）+ `backend/tests/test_etl_media.py`（level 派生 + ETL 幂等），**10/10 通过**；端到端真跑验证 `/docs` 注册 8 条 booking 路由、创建 / 查询 / 重叠(409) / 释放全链路 OK。需求文档见 [`docs/prd_qinglin_booking_p0.md`](docs/prd_qinglin_booking_p0.md)、设计文档见 [`docs/design_qinglin_booking_p0.md`](docs/design_qinglin_booking_p0.md)。
+
+---
+
+### 📺 创视媒体资源子系统（Chuangshi）⭐ 新增
+
+将「创视广东资源明细」清洗为独立业务库 + 单文件售卖模版 + CPM 数据架构，支撑社区写字楼媒体的可售库存管理与定价测算。
+
+**数据源**：`创视广东资源明细-0624.xlsx`（1 个明细 sheet，含标题行 + 元信息行 + 真实表头 12 列）；两个媒体形式 = **大屏 239 屏** + **电梯LCD屏 3725 屏**，**点位 = 单屏设备，合计 3964**（与标题「点位总数 3964」吻合，≠ 位置行 2724）；广东省 12 城市、513 栋楼、项目类型 100% 写字楼。
+
+**库结构**（`backend/data/chuangshi_local.db`，仿 `qinlin_local.db` 命名，与青柠库物理并列独立）：
+
+| 对象 | 说明 |
+|------|------|
+| `chuangshi_points` | 点位 SSOT，单屏设备级 3964 行（省/市/区县/楼宇编码/项目/楼层/等候厅/媒体形式/屏数） |
+| `media_form_pricing` | CPM 定价表（大屏 / 电梯LCD屏 两行，刊例价 + 单屏日均曝光，默认 NULL 待补） |
+| 视图 `v_point_cpm` | 单点位 CPM 计算（屏数 / 周曝光 / 周刊例价 / CPM） |
+| 视图 `v_stats_by_city` · `v_stats_by_media_form` · `v_stats_by_city_media` | 统计聚合（屏数·楼宇数·覆盖城市等） |
+
+**CPM 公式（架构就绪，真实数值留空待补，不编造）**：`CPM(周) = 刊例价(元/周/屏) × 1000 ÷ (单屏日均曝光 × 7)`（屏数在分子分母抵消，按媒体形式算费率）。
+
+**单文件售卖模版**（`chuangshi_sales_template.html`，双击即开，离线可用）：左侧搜索 / 筛选（城市·区县·楼宇·媒体形式）+ 可编辑 CPM 定价面板（localStorage 持久化）+ 右侧 KPI / 统计看板（按城市 / 媒体形式纯 CSS 柱状图）+ 可售清单 CSV 导出。已用 jsdom 无头真跑验证：全新打开 0 崩溃、搜索 / 筛选 / 填价即时算 CPM。
+
+**构建命令（一键生成，幂等）**：
+
+```bash
+cd backend
+.\venv\Scripts\python.exe scripts/build_chuangshi_db.py
+# → 生成 chuangshi_local.db + chuangshi_data.json（内嵌 HTML 的数据 bundle）
+```
+
+**验收**：db 行数 / 视图独立核验通过（大屏 = 239 / 电梯LCD屏 = 3725 / 点位 = 3964）；CPM 视图正确返回 NULL（未编造数据）。架构文档见 [`docs/chuangshi_data_architecture.md`](docs/chuangshi_data_architecture.md)。
+
+---
+
 ## 📡 API 文档
 
 启动后访问 Swagger 自动文档：**http://127.0.0.1:5002/docs**
@@ -638,17 +704,28 @@ AIAdPlacer/
 │   │   ├── services/
 │   │   │   └── ollama_client.py # Ollama HTTP 客户端
 │   │   ├── api/                # v1 传统 REST API
-│   │   └── bmn/               # BMN 品牌增长系统
+│   │   ├── bmn/               # BMN 品牌增长系统
+│   │   ├── routers/bookings.py # ⭐ 青柠 Booking 真实锁位模块（P0）
+│   │   ├── models/booking.py   # Booking / LockTierConfig / MediaLevelRule
+│   │   ├── services/booking_service.py # 四层超卖防护 + 幂等创建
+│   │   └── tasks/booking_release.py     # 锁位到期释放调度
 |   ├── bus-demo.html           # ⭐ bus-pDOOH 演示页面
 │   ├── optimization-demo.html  # ⭐ AI 优化模块演示页（排期/竞品/看板）
+│   ├── scripts/build_chuangshi_db.py # ⭐ 创视数据清洗+建库+生成售卖模版
+│   ├── data/chuangshi_local.db        # ⭐ 创视业务库（3964 点位）
+│   ├── data/chuangshi_data.json       # 创视内嵌 HTML 的数据 bundle
 │   └── venv/
 ├── demo.html                    # 前端 Demo（腾讯地图）
+├── chuangshi_sales_template.html # ⭐ 创视单文件售卖模版（搜索+CPM+统计）
 ├── docs/
 │   ├── schema.sql             # pDOOH 数据库 Schema
 │   ├── bus-pdooh-prd.md       # ⭐ bus-pDOOH 产品需求文档
 │   ├── bus-pdooh-system-design.md # ⭐ bus-pDOOH 系统设计
 │   ├── pdoh_whitepaper_v2.md  # 项目白皮书（含青柠5V论证）
 │   ├── industry_standard_terms_and_guide.md # ⭐ 行业标准术语表+应用指南（T/CCSA 738-2025）
+│   ├── prd_qinglin_booking_p0.md      # ⭐ 青柠 Booking P0 需求文档
+│   ├── design_qinglin_booking_p0.md   # ⭐ 青柠 Booking P0 设计文档
+│   ├── chuangshi_data_architecture.md # ⭐ 创视媒体 CPM + 统计架构文档
 │   └── github_upload_guide.md # GitHub 上传指南
 └── README.md
 ```
@@ -761,6 +838,14 @@ result = mcp_call(
 | 智能屏 L9 | 待接入 | 梯内智能屏 L9 型号 |
 | 客户通讯录 | 内部数据 | 客户关系管理数据 |
 
+### chuangshi_local.db（创视广东媒体资源库，3,964 条）
+
+| 表名 | 记录数 | 说明 |
+|------|--------|------|
+| 大屏点位 | **239** | 写字楼大屏广告位 |
+| 电梯LCD屏点位 | **3,725** | 写字楼电梯 LCD 屏广告位 |
+| 点位合计 | **3,964** | 单屏设备级，广东省 12 城市 / 513 栋楼 |
+
 ---
 
 ## 🚧 开发路线图
@@ -772,6 +857,8 @@ result = mcp_call(
 - [x] **⭐ bus-pDOOH 子系统**完整实现（线路管理/竞价引擎/AI审核/效果归因/演示页）
 - [x] **⭐ 行业标准对齐**（T/CCSA 738-2025 曝光测量术语表+应用指南）
 - [x] **⭐ 青柠智能助手（qinglin_assistant）垂直切片**（知识库真查 + 演示态报备/锁点/导点 + 纯对话 Ollama 关时硬 503 不造假；8/8 回归通过）
+- [x] **⭐ 青柠 Booking 真实锁位模块（P0）**（四层超卖防护 + 幂等 + 到期释放 + 9 端点；10/10 并发/ETL 测试通过）
+- [x] **⭐ 创视媒体资源子系统**（数据清洗 + SQLite 业务库 3964 点位 + 单文件售卖模版 + CPM 架构；jsdom 真跑 0 崩溃）
 - [ ] v2.1 行业标准曝光计算引擎（流动/驻留曝光 + SOT + 曝光乘数 + 接触频次）
 - [ ] v2.1 接入真实青柠数据（广州试点）
 - [ ] v2.2 数字联盟可信 ID SDK 集成
